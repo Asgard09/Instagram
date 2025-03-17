@@ -2,9 +2,9 @@ server:
   port: 8080
 spring:
   datasource:
-    url: jdbc:mysql://localhost:3307/instagram
-    username: root
-    password: 09102004phuc
+    url: ${DB_URL}
+    username: ${DB_USERNAME}
+    password: ${DB_PASSWORD}
     driver-class-name: com.mysql.cj.jdbc.Driver
   jpa:
     hibernate:
@@ -15,14 +15,14 @@ spring:
         dialect: org.hibernate.dialect.MySQLDialect
   security:
     user:
-      name: ${SECURITY_USERNAME:asgard}
-      password: ${SECURITY_PASSWORD:09102004}
+      name: ${SECURITY_USERNAME}
+      password: ${SECURITY_PASSWORD}
     oauth2:
         client:
             registration:
               google:
-                client-id: ${GOOGLE_CLIENT_ID:143525438141-rfrribfkddm932mkq8pp8chn79b37ui6.apps.googleusercontent.com}
-                client-secret: ${GOOGLE_CLIENT_SECRET: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}
+                client-id: ${GOOGLE_CLIENT_ID}
+                client-secret: ${GOOGLE_CLIENT_SECRET}
               facebook:
-                client-id: ${FACEBOOK_CLIENT_ID:1185508363214746}
-                client-secret: ${FACEBOOK_CLIENT_SECRET:04fc4d6532554de154ea685bbfd61bb0}
+                client-id: ${FACEBOOK_CLIENT_ID}
+                client-secret: ${FACEBOOK_CLIENT_SECRET}
