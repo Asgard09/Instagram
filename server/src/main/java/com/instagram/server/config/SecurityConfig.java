@@ -19,11 +19,15 @@ public class SecurityConfig {
             .authorizeHttpRequests((request) -> request
                 .requestMatchers("/api/auth/public/**").permitAll()
                 .requestMatchers(HttpMethod.OPTIONS, "/**").permitAll()
-                .requestMatchers("/secure", "/api/auth/token", "/api/auth/user").authenticated()
+                .requestMatchers("/secure", "/api/auth/token", "/api/auth/user", "/api/auth/oauth2/success").authenticated()
                 .anyRequest().permitAll()
             )
             .formLogin(Customizer.withDefaults())
-            .oauth2Login(Customizer.withDefaults())
+            .oauth2Login(oauth2 -> oauth2
+                .loginPage("/login")
+                .defaultSuccessUrl("/api/auth/oauth2/success", true)
+                .failureUrl("/login?error=true")
+            )
             .csrf(csrf -> csrf.disable())  // Disable CSRF for API requests
             .cors(Customizer.withDefaults());  // Enable CORS
             
