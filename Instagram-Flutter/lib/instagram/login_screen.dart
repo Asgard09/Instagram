@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:font_awesome_flutter/font_awesome_flutter.dart';
 import 'package:practice_widgets/instagram/home_screen.dart';
 import 'package:practice_widgets/instagram/main_screen.dart';
 import 'package:practice_widgets/instagram/register_screen.dart';
@@ -92,26 +93,59 @@ class LoginScreen extends StatelessWidget {
                             color: Colors.white, fontWeight: FontWeight.bold),
                       )),
                     ),
+
                   ),
                   SizedBox(
-                    height: 10,
+                    height: 15,
                   ),
-                  Row(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: [
-                      Text(
-                        "Forgot your login details? ",
-                        style: TextStyle(color: Colors.white),
-                      ),
-                      Text(
-                        "Get help logging in.",
-                        style: TextStyle(
-                            color: Colors.white, fontWeight: FontWeight.bold),
-                      ),
-                    ],
-                  )
+                  Container(
+                    width: 327,
+                    height: 40,
+                    decoration: BoxDecoration(
+                      color: Colors.blue,
+                      borderRadius: BorderRadius.circular(10),
+                    ),
+                    child: Row(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        Icon(Icons.facebook),
+                        SizedBox(
+                          width: 7,
+                        ),
+                        Center(
+                            child: Text(
+                              'Log in with Facebook',
+                              style: TextStyle(
+                                  color: Colors.white, fontWeight: FontWeight.bold),
+                            )),
+                      ],
+                    ),
+                  ),
+                  const SizedBox(
+                    height: 15,
+                  ),
+                  Container(
+                    width: 327,
+                    height: 40,
+                    decoration: BoxDecoration(
+                      color: Colors.blue, // Màu Google
+                      borderRadius: BorderRadius.circular(10),
+                    ),
+                    child: Row(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        FaIcon(FontAwesomeIcons.google),
+                        const SizedBox(width: 7),
+                        const Text(
+                          'Log in with Google',
+                          style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold),
+                        ),
+                      ],
+                    ),
+                  ),
                 ],
               )),
+
           Expanded(
               flex: 2,
               child: Center(
