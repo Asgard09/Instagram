@@ -1,15 +1,16 @@
 import 'package:flutter/material.dart';
 import 'package:practice_widgets/instagram/login_screen.dart';
-import 'package:practice_widgets/instagram/main_screen.dart';
-import 'package:practice_widgets/instagram/new_messenger.dart';
-import 'package:practice_widgets/screens/media_query.dart';
-import 'package:practice_widgets/screens/screen_one.dart';
-import 'package:practice_widgets/screens/widgets_list.dart';
+import 'package:provider/provider.dart';
 
-import 'instagram/chat_screen.dart';
+import 'data/providers/auth_provider.dart';
 
 void main() {
-  runApp(const MyApp());
+  runApp(
+    ChangeNotifierProvider(
+      create: (_) => AuthProvider(),
+      child: MyApp(),
+    ),
+  );
 }
 
 class MyApp extends StatelessWidget {

@@ -3,29 +3,70 @@ import 'package:font_awesome_flutter/font_awesome_flutter.dart';
 import 'package:practice_widgets/instagram/home_screen.dart';
 import 'package:practice_widgets/instagram/main_screen.dart';
 import 'package:practice_widgets/instagram/register_screen.dart';
+import 'package:provider/provider.dart';
 import '../services/facebook_auth_service.dart';
+import '../data/providers/auth_provider.dart';
+import '../services/auth_service.dart';
 
-class LoginScreen extends StatelessWidget {
+class LoginScreen extends StatefulWidget {
   const LoginScreen({Key? key}) : super(key: key);
 
-  Future<void> _handleFacebookLogin(BuildContext context) async {
-    final facebookAuth = FacebookAuthService();
-    final userData = await facebookAuth.signInWithFacebook();
-    
-    if (userData != null) {
-      print('Logged in user: ${userData['name']}');
-      Navigator.of(context).pushReplacement(
-        MaterialPageRoute(
-          builder: (context) => MainScreen(),
-        ),
-      );
-    } else {
+  @override
+  State<LoginScreen> createState() => _LoginScreenState();
+}
+
+class _LoginScreenState extends State<LoginScreen> {
+  final _usernameController = TextEditingController();
+  final _passwordController = TextEditingController();
+  final _authService = AuthService();
+  bool _isLoading = false;
+
+  Future<void> _handleLogin() async {
+    if (_usernameController.text.isEmpty || _passwordController.text.isEmpty) {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
-          content: Text('Failed to login with Facebook'),
+          content: Text('Please enter username and password'),
           backgroundColor: Colors.red,
         ),
       );
+      return;
+    }
+
+    setState(() => _isLoading = true);
+
+    try {
+      final token = await _authService.login(
+        _usernameController.text,
+        _passwordController.text,
+      );
+
+      if (token != null) {
+        // Store token
+        await Provider.of<AuthProvider>(context, listen: false).setToken(token);
+        
+        // Navigate to main screen
+        Navigator.of(context).pushReplacement(
+          MaterialPageRoute(
+            builder: (context) => MainScreen(),
+          ),
+        );
+      } else {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Invalid username or password'),
+            backgroundColor: Colors.red,
+          ),
+        );
+      }
+    } catch (e) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('Login error: ${e.toString()}'),
+          backgroundColor: Colors.red,
+        ),
+      );
+    } finally {
+      setState(() => _isLoading = false);
     }
   }
 
@@ -65,6 +106,7 @@ class LoginScreen extends StatelessWidget {
                       ),
                       SizedBox(height: 10),
                       TextField(
+                        controller: _usernameController,
                         decoration: InputDecoration(
                           border: OutlineInputBorder(
                               borderRadius: BorderRadius.circular(11)),
@@ -74,11 +116,13 @@ class LoginScreen extends StatelessWidget {
                           constraints:
                               BoxConstraints.tightFor(width: 327, height: 50),
                           hintStyle: TextStyle(color: Colors.grey),
-                          hintText: 'Phone number, email or username',
+                          hintText: 'Username',
                         ),
                       ),
                       SizedBox(height: 10),
                       TextField(
+                        controller: _passwordController,
+                        obscureText: true,
                         decoration: InputDecoration(
                           border: OutlineInputBorder(
                               borderRadius: BorderRadius.circular(11)),
@@ -93,13 +137,7 @@ class LoginScreen extends StatelessWidget {
                       ),
                       SizedBox(height: 10),
                       InkWell(
-                        onTap: () {
-                          Navigator.of(context).push(
-                            MaterialPageRoute(
-                              builder: (context) => MainScreen(),
-                            ),
-                          );
-                        },
+                        onTap: _isLoading ? null : _handleLogin,
                         child: Container(
                           width: 327,
                           height: 50,
@@ -108,13 +146,17 @@ class LoginScreen extends StatelessWidget {
                             borderRadius: BorderRadius.circular(15),
                           ),
                           child: Center(
-                              child: Text(
-                            'Login',
-                            style: TextStyle(
-                                color: Colors.white, fontWeight: FontWeight.bold),
-                          )),
+                            child: _isLoading
+                              ? CircularProgressIndicator(color: Colors.white)
+                              : Text(
+                                  'Login',
+                                  style: TextStyle(
+                                    color: Colors.white,
+                                    fontWeight: FontWeight.bold,
+                                  ),
+                                ),
+                          ),
                         ),
-
                       ),
                       SizedBox(height: 10),
                       Container(
@@ -210,5 +252,33 @@ class LoginScreen extends StatelessWidget {
         ],
       ),
     );
+  }
+
+  Future<void> _handleFacebookLogin(BuildContext context) async {
+    final facebookAuth = FacebookAuthService();
+    final userData = await facebookAuth.signInWithFacebook();
+    
+    if (userData != null) {
+      print('Logged in user: ${userData['name']}');
+      Navigator.of(context).pushReplacement(
+        MaterialPageRoute(
+          builder: (context) => MainScreen(),
+        ),
+      );
+    } else {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Failed to login with Facebook'),
+          backgroundColor: Colors.red,
+        ),
+      );
+    }
+  }
+
+  @override
+  void dispose() {
+    _usernameController.dispose();
+    _passwordController.dispose();
+    super.dispose();
   }
 }
