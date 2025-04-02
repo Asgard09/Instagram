@@ -33,13 +33,7 @@ public class JwtService {
 
     public boolean isValid(String token, UserDetails user) {
         String username = extractUsername(token);
-
-        boolean validToken = tokenRepository
-                .findByAccessToken(token)
-                .map(t -> !t.isLoggedOut())
-                .orElse(false);
-
-        return (username.equals(user.getUsername())) && !isTokenExpired(token) && validToken;
+        return (username.equals(user.getUsername())) && !isTokenExpired(token);
     }
 
     private boolean isTokenExpired(String token) {
@@ -64,7 +58,11 @@ public class JwtService {
                 .getPayload();
     }
 
-    private String generateToken(User user, long expireTime) {
+    public String generateAccessToken(User user) {
+        return generateToken(user, accessTokenExpire);
+    }
+
+    public String generateToken(User user, long expireTime) {
         String token = Jwts
                 .builder()
                 .subject(user.getUsername())
