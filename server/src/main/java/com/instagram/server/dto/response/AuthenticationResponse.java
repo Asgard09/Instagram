@@ -1,11 +1,13 @@
 package com.instagram.server.dto.response;
 
-import lombok.Data;
+import lombok.Getter;
+import lombok.Setter;
 
-@Data
+@Getter
+@Setter
 public class AuthenticationResponse {
 
-    private String accessToken;
+    private final String accessToken;
 
     public AuthenticationResponse(String accessToken) {
         this.accessToken = accessToken;

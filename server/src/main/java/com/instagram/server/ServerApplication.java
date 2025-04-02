@@ -1,5 +1,6 @@
 package com.instagram.server;
 
+import com.instagram.server.dto.response.AuthenticationResponse;
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
 
