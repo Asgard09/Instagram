@@ -40,7 +40,10 @@ class _LoginScreenState extends State<LoginScreen> {
         _passwordController.text,
       );
 
-      if (token != null) {
+      print('Received token: $token');
+
+      if (token != null && token.isNotEmpty) {
+        print('Storing token and navigating...');
         // Store token
         await Provider.of<AuthProvider>(context, listen: false).setToken(token);
         
@@ -51,6 +54,7 @@ class _LoginScreenState extends State<LoginScreen> {
           ),
         );
       } else {
+        print('Token was null or empty');
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(
             content: Text('Invalid username or password'),
@@ -59,6 +63,7 @@ class _LoginScreenState extends State<LoginScreen> {
         );
       }
     } catch (e) {
+      print('Login error: $e');
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
           content: Text('Login error: ${e.toString()}'),
