@@ -1,8 +1,10 @@
 import 'package:flutter/material.dart';
+import 'package:practice_widgets/instagram/home_screen.dart';
 import 'package:practice_widgets/instagram/login_screen.dart';
 import 'package:provider/provider.dart';
 
 import 'data/providers/auth_provider.dart';
+import 'instagram/main_screen.dart';
 
 void main() {
   runApp(
@@ -25,6 +27,6 @@ class MyApp extends StatelessWidget {
         theme: ThemeData(
           primarySwatch: Colors.blue,
         ),
-        home: LoginScreen());
+        home: MainScreen());
   }
 }
