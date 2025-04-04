@@ -2,14 +2,21 @@ package com.instagram.server.entity;
 
 import jakarta.persistence.*;
 import lombok.Data;
+import lombok.Getter;
+import lombok.Setter;
+import org.springframework.security.core.GrantedAuthority;
+import org.springframework.security.core.userdetails.UserDetails;
 
+import java.util.Collection;
+import java.util.Date;
 import java.util.List;
 import java.util.Set;
 
 @Entity
-@Data
 @Table(name = "users")
-public class User {
+@Getter
+@Setter
+public class User implements UserDetails {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long userId;
@@ -29,8 +36,9 @@ public class User {
     @Column(name = "bio")
     private String bio;
 
-    @Column(name = "created_at")
-    private String createdAt;
+    @Column(name = "created_at", nullable = false, updatable = false)
+    @Temporal(TemporalType.TIMESTAMP)
+    private Date createdAt;
 
     @OneToMany(mappedBy = "user")
     private List<Post> posts;
@@ -46,4 +54,39 @@ public class User {
 
     @OneToMany(mappedBy = "follower", cascade = CascadeType.ALL, orphanRemoval = true)
     private Set<Follow> followers;
+
+    @Override
+    public Collection<? extends GrantedAuthority> getAuthorities() {
+        return List.of();
+    }
+
+    @Override
+    public boolean isAccountNonExpired() {
+        return true;
+    }
+
+    @Override
+    public boolean isAccountNonLocked() {
+        return true;
+    }
+
+    @Override
+    public boolean isCredentialsNonExpired() {
+        return true;
+    }
+
+    @Override
+    public boolean isEnabled() {
+        return true;
+    }
+
+    @Override
+    public String getUsername() {
+        return this.username;
+    }
+
+    @Override
+    public String getPassword() {
+        return this.password;
+    }
 }

@@ -2,9 +2,77 @@ import 'package:flutter/material.dart';
 import 'package:practice_widgets/instagram/login_screen.dart';
 import 'package:practice_widgets/instagram/main_screen.dart';
 import 'package:font_awesome_flutter/font_awesome_flutter.dart';
+import '../services/auth_service.dart';
 
-class RegisterScreen extends StatelessWidget {
+class RegisterScreen extends StatefulWidget {
   const RegisterScreen({Key? key}) : super(key: key);
+
+  @override
+  State<RegisterScreen> createState() => _RegisterScreenState();
+}
+
+class _RegisterScreenState extends State<RegisterScreen> {
+  final _usernameController = TextEditingController();
+  final _emailController = TextEditingController();
+  final _passwordController = TextEditingController();
+  final _authService = AuthService();
+  bool _isLoading = false;
+
+  Future<void> _handleRegister() async {
+    if (_usernameController.text.isEmpty ||
+        _emailController.text.isEmpty ||
+        _passwordController.text.isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Please fill in all fields'),
+          backgroundColor: Colors.red,
+        ),
+      );
+      return;
+    }
+
+    setState(() => _isLoading = true);
+
+    try {
+      final success = await _authService.register(
+        _usernameController.text,
+        _emailController.text,
+        _passwordController.text,
+      );
+
+      if (success) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Registration successful! Please login.'),
+            backgroundColor: Colors.green,
+          ),
+        );
+
+        // Navigate to login screen
+        Navigator.of(context).pushReplacement(
+          MaterialPageRoute(
+            builder: (context) => LoginScreen(),
+          ),
+        );
+      } else {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Registration failed. Please try again.'),
+            backgroundColor: Colors.red,
+          ),
+        );
+      }
+    } catch (e) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('Registration error: ${e.toString()}'),
+          backgroundColor: Colors.red,
+        ),
+      );
+    } finally {
+      setState(() => _isLoading = false);
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -57,10 +125,10 @@ class RegisterScreen extends StatelessWidget {
                     ),
                     Center(
                         child: Text(
-                      'Log in with Facebook',
-                      style: TextStyle(
-                          color: Colors.white, fontWeight: FontWeight.bold),
-                    )),
+                          'Log in with Facebook',
+                          style: TextStyle(
+                              color: Colors.white, fontWeight: FontWeight.bold),
+                        )),
                   ],
                 ),
               ),
@@ -115,6 +183,7 @@ class RegisterScreen extends StatelessWidget {
                 height: 20,
               ),
               TextField(
+                controller: _usernameController,
                 decoration: InputDecoration(
                   border: OutlineInputBorder(
                       borderRadius: BorderRadius.circular(11)),
@@ -123,13 +192,14 @@ class RegisterScreen extends StatelessWidget {
                   filled: true,
                   constraints: BoxConstraints.tightFor(width: 327, height: 50),
                   hintStyle: TextStyle(color: Colors.grey),
-                  hintText: 'Password',
+                  hintText: 'Username',
                 ),
               ),
               SizedBox(
                 height: 15,
               ),
               TextField(
+                controller: _emailController,
                 decoration: InputDecoration(
                   border: OutlineInputBorder(
                       borderRadius: BorderRadius.circular(11)),
@@ -138,28 +208,15 @@ class RegisterScreen extends StatelessWidget {
                   filled: true,
                   constraints: BoxConstraints.tightFor(width: 327, height: 50),
                   hintStyle: TextStyle(color: Colors.grey),
-                  hintText: 'Password',
+                  hintText: 'Email',
                 ),
               ),
               SizedBox(
                 height: 15,
               ),
               TextField(
-                decoration: InputDecoration(
-                  border: OutlineInputBorder(
-                      borderRadius: BorderRadius.circular(11)),
-                  fillColor: Colors.grey.shade700,
-                  prefixIconColor: Colors.white,
-                  filled: true,
-                  constraints: BoxConstraints.tightFor(width: 327, height: 50),
-                  hintStyle: TextStyle(color: Colors.grey),
-                  hintText: 'Password',
-                ),
-              ),
-              SizedBox(
-                height: 15,
-              ),
-              TextField(
+                controller: _passwordController,
+                obscureText: true,
                 decoration: InputDecoration(
                   border: OutlineInputBorder(
                       borderRadius: BorderRadius.circular(11)),
@@ -175,13 +232,7 @@ class RegisterScreen extends StatelessWidget {
                 height: 15,
               ),
               InkWell(
-                onTap: () {
-                  Navigator.of(context).push(
-                    MaterialPageRoute(
-                      builder: (context) => MainScreen(),
-                    ),
-                  );
-                },
+                onTap: _isLoading ? null : _handleRegister,
                 child: Container(
                   width: 327,
                   height: 50,
@@ -190,11 +241,16 @@ class RegisterScreen extends StatelessWidget {
                     borderRadius: BorderRadius.circular(15),
                   ),
                   child: Center(
-                      child: Text(
-                    'Register',
-                    style: TextStyle(
-                        color: Colors.white, fontWeight: FontWeight.bold),
-                  )),
+                    child: _isLoading
+                        ? CircularProgressIndicator(color: Colors.white)
+                        : Text(
+                      'Register',
+                      style: TextStyle(
+                        color: Colors.white,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                  ),
                 ),
               ),
               SizedBox(
@@ -240,5 +296,13 @@ class RegisterScreen extends StatelessWidget {
         ),
       ),
     );
+  }
+
+  @override
+  void dispose() {
+    _usernameController.dispose();
+    _emailController.dispose();
+    _passwordController.dispose();
+    super.dispose();
   }
 }
