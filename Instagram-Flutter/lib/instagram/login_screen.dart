@@ -4,7 +4,6 @@ import 'package:practice_widgets/instagram/home_screen.dart';
 import 'package:practice_widgets/instagram/main_screen.dart';
 import 'package:practice_widgets/instagram/register_screen.dart';
 import 'package:provider/provider.dart';
-import '../services/facebook_auth_service.dart';
 import '../data/providers/auth_provider.dart';
 import '../services/auth_service.dart';
 
@@ -46,7 +45,7 @@ class _LoginScreenState extends State<LoginScreen> {
         print('Storing token and navigating...');
         // Store token
         await Provider.of<AuthProvider>(context, listen: false).setToken(token);
-        
+
         // Navigate to main screen
         Navigator.of(context).pushReplacement(
           MaterialPageRoute(
@@ -84,16 +83,16 @@ class _LoginScreenState extends State<LoginScreen> {
           Expanded(
               child: Center(
                   child: Text(
-            'English',
-            style: TextStyle(color: Colors.white),
-          ))),
+                    'English',
+                    style: TextStyle(color: Colors.white),
+                  ))),
           Expanded(
               flex: 2,
               child: Center(
                   child: Text(
-                '',
-                style: TextStyle(color: Colors.white),
-              ))),
+                    '',
+                    style: TextStyle(color: Colors.white),
+                  ))),
           Expanded(
               flex: 4,
               child: SingleChildScrollView(
@@ -119,7 +118,7 @@ class _LoginScreenState extends State<LoginScreen> {
                           prefixIconColor: Colors.white,
                           filled: true,
                           constraints:
-                              BoxConstraints.tightFor(width: 327, height: 50),
+                          BoxConstraints.tightFor(width: 327, height: 50),
                           hintStyle: TextStyle(color: Colors.grey),
                           hintText: 'Username',
                         ),
@@ -135,7 +134,7 @@ class _LoginScreenState extends State<LoginScreen> {
                           prefixIconColor: Colors.white,
                           filled: true,
                           constraints:
-                              BoxConstraints.tightFor(width: 327, height: 50),
+                          BoxConstraints.tightFor(width: 327, height: 50),
                           hintStyle: TextStyle(color: Colors.grey),
                           hintText: 'Password',
                         ),
@@ -152,71 +151,18 @@ class _LoginScreenState extends State<LoginScreen> {
                           ),
                           child: Center(
                             child: _isLoading
-                              ? CircularProgressIndicator(color: Colors.white)
-                              : Text(
-                                  'Login',
-                                  style: TextStyle(
-                                    color: Colors.white,
-                                    fontWeight: FontWeight.bold,
-                                  ),
-                                ),
-                          ),
-                        ),
-                      ),
-                      SizedBox(height: 10),
-                      Container(
-                        width: 327,
-                        height: 40,
-                        decoration: BoxDecoration(
-                          color: Color(0xFF1877F2),
-                          borderRadius: BorderRadius.circular(10),
-                        ),
-                        child: InkWell(
-                          onTap: () => _handleFacebookLogin(context),
-                          child: Row(
-                            mainAxisAlignment: MainAxisAlignment.center,
-                            children: [
-                              FaIcon(
-                                FontAwesomeIcons.facebookF,
+                                ? CircularProgressIndicator(color: Colors.white)
+                                : Text(
+                              'Login',
+                              style: TextStyle(
                                 color: Colors.white,
-                                size: 20,
+                                fontWeight: FontWeight.bold,
                               ),
-                              SizedBox(
-                                width: 7,
-                              ),
-                              Text(
-                                'Log in with Facebook',
-                                style: TextStyle(
-                                  color: Colors.white, 
-                                  fontWeight: FontWeight.bold
-                                ),
-                              ),
-                            ],
+                            ),
                           ),
                         ),
                       ),
-                      const SizedBox(
-                        height: 10,
-                      ),
-                      Container(
-                        width: 327,
-                        height: 40,
-                        decoration: BoxDecoration(
-                          color: Colors.blue, // Màu Google
-                          borderRadius: BorderRadius.circular(10),
-                        ),
-                        child: Row(
-                          mainAxisAlignment: MainAxisAlignment.center,
-                          children: [
-                            FaIcon(FontAwesomeIcons.google),
-                            const SizedBox(width: 7),
-                            const Text(
-                              'Log in with Google',
-                              style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold),
-                            ),
-                          ],
-                        ),
-                      ),
+
                     ],
                   ),
                 ),
@@ -226,9 +172,9 @@ class _LoginScreenState extends State<LoginScreen> {
               flex: 2,
               child: Center(
                   child: Text(
-                '',
-                style: TextStyle(color: Colors.white),
-              ))),
+                    '',
+                    style: TextStyle(color: Colors.white),
+                  ))),
           Expanded(
             child: Row(
               mainAxisAlignment: MainAxisAlignment.center,
@@ -259,26 +205,6 @@ class _LoginScreenState extends State<LoginScreen> {
     );
   }
 
-  Future<void> _handleFacebookLogin(BuildContext context) async {
-    final facebookAuth = FacebookAuthService();
-    final userData = await facebookAuth.signInWithFacebook();
-    
-    if (userData != null) {
-      print('Logged in user: ${userData['name']}');
-      Navigator.of(context).pushReplacement(
-        MaterialPageRoute(
-          builder: (context) => MainScreen(),
-        ),
-      );
-    } else {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('Failed to login with Facebook'),
-          backgroundColor: Colors.red,
-        ),
-      );
-    }
-  }
 
   @override
   void dispose() {

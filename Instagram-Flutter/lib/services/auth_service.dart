@@ -2,12 +2,12 @@ import 'package:http/http.dart' as http;
 import 'dart:convert';
 
 class AuthService {
-  final String baseUrl = 'http://192.168.1.4:8080/auth';
+  final String baseUrl = 'http://10.0.2.2:8080/auth';
 
   Future<String?> login(String username, String password) async {
     try {
       print('Attempting to connect to: $baseUrl/login');
-      
+
       final response = await http.post(
         Uri.parse('$baseUrl/login'),
         headers: {
@@ -39,7 +39,7 @@ class AuthService {
   Future<bool> register(String username, String email, String password) async {
     try {
       print('Attempting to register at: $baseUrl/register');
-      
+
       final response = await http.post(
         Uri.parse('$baseUrl/register'),
         headers: {

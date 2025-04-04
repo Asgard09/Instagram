@@ -3,6 +3,8 @@ import 'package:practice_widgets/instagram/login_screen.dart';
 import 'package:practice_widgets/widgets/circle_story.dart';
 import 'package:practice_widgets/widgets/story_widget.dart';
 
+import 'edit_profile_screen.dart';
+
 class ProfileScreen extends StatelessWidget {
   final List _stories = ['story 1', 'story 2', 'story 3', 'story 4', 'story 5'];
 
@@ -146,18 +148,32 @@ class ProfileScreen extends StatelessWidget {
                 children: [
                   Padding(
                     padding: const EdgeInsets.all(8.0),
-                    child: Container(
-                      height: 30,
-                      width: 330,
-                      decoration: BoxDecoration(
+                    child: GestureDetector(
+                      onTap: () {
+                        Navigator.push(
+                          context,
+                          MaterialPageRoute(
+                            builder: (context) => const EditProfileScreen(),
+                          ),
+                        );
+                      },
+                      child: Container(
+                        height: 30,
+                        width: 330,
+                        decoration: BoxDecoration(
                           color: Colors.grey.shade700,
-                          borderRadius: BorderRadius.circular(8)),
-                      child: const Center(
+                          borderRadius: BorderRadius.circular(8),
+                        ),
+                        child: const Center(
                           child: Text(
-                        'Edit Profile',
-                        style: TextStyle(
-                            color: Colors.white, fontWeight: FontWeight.bold),
-                      )),
+                            'Edit Profile',
+                            style: TextStyle(
+                              color: Colors.white,
+                              fontWeight: FontWeight.bold,
+                            ),
+                          ),
+                        ),
+                      ),
                     ),
                   ),
                   Padding(

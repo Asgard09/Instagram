@@ -3,7 +3,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 
 class AuthProvider extends ChangeNotifier {
   String? _token;
-  
+
   String? get token => _token;
   bool get isAuthenticated => _token != null;
 
@@ -11,10 +11,10 @@ class AuthProvider extends ChangeNotifier {
     _token = token;
     if (token != null) {
       await SharedPreferences.getInstance()
-        .then((prefs) => prefs.setString('jwt_token', token));
+          .then((prefs) => prefs.setString('jwt_token', token));
     } else {
       await SharedPreferences.getInstance()
-        .then((prefs) => prefs.remove('jwt_token'));
+          .then((prefs) => prefs.remove('jwt_token'));
     }
     notifyListeners();
   }

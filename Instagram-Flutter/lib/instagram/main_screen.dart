@@ -1,9 +1,10 @@
 import 'package:flutter/material.dart';
-import 'package:practice_widgets/instagram/home_screen.dart';
-import 'package:practice_widgets/instagram/profile_scree.dart';
+import 'package:practice_widgets/instagram/new_post_screen.dart';
+import 'package:practice_widgets/instagram/profile_screen.dart';
 import 'package:practice_widgets/instagram/reels_screen.dart';
 import 'package:practice_widgets/instagram/search_screen.dart';
-import 'package:practice_widgets/instagram/shop_screen.dart';
+
+import 'home_screen.dart';
 
 class MainScreen extends StatefulWidget {
   const MainScreen({Key? key}) : super(key: key);
@@ -15,12 +16,20 @@ class MainScreen extends StatefulWidget {
 class _MainScreenState extends State<MainScreen> {
   int _selectedIndex = 0;
 
-  static List<Widget> _widgetOptions = <Widget>[
+  // List of screens
+  static final List<Widget> _widgetOptions = <Widget>[
     HomeScreen(),
     SearchScreen(),
     ReelsScreen(),
-    ShopScreen(),
-    ProfileScreen()
+    ProfileScreen(),
+  ];
+
+  // List of icons for the bottom navigation
+  final List<IconData> _navigationIcons = [
+    Icons.home,
+    Icons.search_outlined,
+    Icons.smart_display_outlined,
+    Icons.person,
   ];
 
   void _onItemTapped(int index) {
@@ -29,41 +38,59 @@ class _MainScreenState extends State<MainScreen> {
     });
   }
 
+  void _openPostScreen() {
+    Navigator.push(
+      context,
+      MaterialPageRoute(builder: (context) => const NewPostScreen()),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: Colors.black,
-      body: Center(
-        child: _widgetOptions.elementAt(_selectedIndex),
+      body: _widgetOptions.elementAt(_selectedIndex),
+      bottomNavigationBar: Container(
+        height: 100,
+        color: Colors.black,
+        child: Row(
+          mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+          children: [
+            // First two icons
+            _buildNavItem(0),
+            _buildNavItem(1),
+
+            // Add button in the middle
+            GestureDetector(
+              onTap: _openPostScreen,
+              child: const Icon(
+                Icons.add_box_outlined,
+                size: 30,
+                color: Colors.white,
+              ),
+            ),
+
+            // Last two icons
+            _buildNavItem(2),
+            _buildNavItem(3),
+          ],
+        ),
       ),
-      bottomNavigationBar: BottomNavigationBar(
-        items: const <BottomNavigationBarItem>[
-          BottomNavigationBarItem(
-              icon: Icon(Icons.home), label: '', backgroundColor: Colors.black),
-          BottomNavigationBarItem(
-              icon: Icon(Icons.search_outlined),
-              label: '',
-              backgroundColor: Colors.black),
-          BottomNavigationBarItem(
-              icon: Icon(Icons.smart_display_outlined),
-              label: '',
-              backgroundColor: Colors.black),
-          BottomNavigationBarItem(
-              icon: Icon(Icons.card_giftcard_outlined),
-              label: '',
-              backgroundColor: Colors.black),
-          BottomNavigationBarItem(
-              icon: Icon(Icons.person),
-              label: '',
-              backgroundColor: Colors.black),
-        ],
-        backgroundColor: Colors.black,
-        unselectedItemColor: Colors.white,
-        showUnselectedLabels: true,
-        iconSize: 35,
-        currentIndex: _selectedIndex,
-        selectedItemColor: Colors.white,
-        onTap: _onItemTapped,
+    );
+  }
+
+  // Build a navigation item
+  Widget _buildNavItem(int index) {
+    bool isSelected = index == _selectedIndex;
+    return GestureDetector(
+      onTap: () => _onItemTapped(index),
+      child: Container(
+        padding: const EdgeInsets.all(8),
+        child: Icon(
+          _navigationIcons[index],
+          size: 40,
+          color: isSelected ? Colors.white : Colors.grey,
+        ),
       ),
     );
   }
