@@ -1,6 +1,6 @@
 package com.instagram.server.service;
 
-import com.instagram.server.dto.request.UserRequest;
+import com.instagram.server.dto.request.AuthRequest;
 import com.instagram.server.dto.response.AuthenticationResponse;
 import com.instagram.server.entity.User;
 import com.instagram.server.repository.UserRepository;
@@ -28,7 +28,7 @@ public class AuthenticationService {
         this.authenticationManager = authenticationManager;
     }
 
-    public AuthenticationResponse register(UserRequest request){
+    public AuthenticationResponse register(AuthRequest request){
         User user = new User();
         user.setUsername(request.getUsername());
         user.setEmail(request.getEmail());
@@ -41,7 +41,7 @@ public class AuthenticationService {
         return new AuthenticationResponse(token);
     }
 
-    public AuthenticationResponse authenticate(UserRequest request) {
+    public AuthenticationResponse authenticate(AuthRequest request) {
         try {
             authenticationManager.authenticate(
                     new UsernamePasswordAuthenticationToken(

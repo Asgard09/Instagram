@@ -1,7 +1,7 @@
 package com.instagram.server.entity;
 
+import com.instagram.server.base.Gender;
 import jakarta.persistence.*;
-import lombok.Data;
 import lombok.Getter;
 import lombok.Setter;
 import org.springframework.security.core.GrantedAuthority;
@@ -35,6 +35,12 @@ public class User implements UserDetails {
 
     @Column(name = "bio")
     private String bio;
+
+    @Column(name = "name")
+    private String name;
+
+    @Column(name = "gender")
+    private Gender gender;
 
     @Column(name = "created_at", nullable = false, updatable = false)
     @Temporal(TemporalType.TIMESTAMP)
