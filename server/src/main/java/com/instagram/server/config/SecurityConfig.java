@@ -44,6 +44,7 @@ public class SecurityConfig {
                         req -> req
                                 .requestMatchers(HttpMethod.OPTIONS, "/**").permitAll()
                                 .requestMatchers("/auth/login/**", "/auth/register/**").permitAll()
+                                .requestMatchers("/uploads/**").permitAll()
                                 .anyRequest().authenticated()
                 ).userDetailsService(userDetailsServiceImpl)
                 .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
