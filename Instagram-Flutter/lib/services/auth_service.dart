@@ -2,7 +2,7 @@ import 'package:http/http.dart' as http;
 import 'dart:convert';
 
 class AuthService {
-  final String baseUrl = 'http://10.0.2.2:8080/auth';
+  final String baseUrl = 'http://172.16.10.0:8080/auth';
 
   Future<String?> login(String username, String password) async {
     try {
