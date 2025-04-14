@@ -3,7 +3,6 @@ package com.instagram.server.service;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 
-import java.io.File;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.nio.file.Files;
@@ -18,6 +17,7 @@ public class FileStorageService {
     @Value("${app.file.upload-dir:uploads}")
     private String uploadDir;
 
+    //Stores a Base64-encoded image in a folder and returns the file path.
     public String storeBase64Image(String base64Image, String directory) throws IOException {
         // Create directory if it doesn't exist
         Path dirPath = Paths.get(uploadDir, directory);
