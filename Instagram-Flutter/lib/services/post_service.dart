@@ -3,7 +3,7 @@ import 'package:http/http.dart' as http;
 import '../models/post.dart';
 
 class PostService {
-  final String baseUrl = 'http://172.16.10.0:8080/api';
+  final String baseUrl = 'http://192.168.1.4:8080/api';
 
   Future<Post?> createPost(String imageBase64, String caption, String token) async {
     try {

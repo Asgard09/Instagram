@@ -1,6 +1,12 @@
 import 'package:flutter/material.dart';
 import 'dart:io';
+import 'dart:convert';
 import '../models/media_item.dart';
+import 'package:flutter/foundation.dart' show kIsWeb;
+import '../services/post_service.dart';
+import 'package:provider/provider.dart';
+import '../data/providers/auth_provider.dart';
+
 class EditPostScreen extends StatefulWidget {
   final List<MediaItem> selectedMedia;
   const EditPostScreen({Key? key, required this.selectedMedia}) : super(key: key);
@@ -11,7 +17,9 @@ class EditPostScreen extends StatefulWidget {
 
 class _EditPostScreenState extends State<EditPostScreen> {
   final TextEditingController _captionController = TextEditingController();
+  final PostService _postService = PostService();
   List<String> _taggedPeople = [];
+  bool _isLoading = false;
 
   void _tagPeople() async {
     final result = await showDialog<String>(
@@ -31,6 +39,72 @@ class _EditPostScreenState extends State<EditPostScreen> {
     }
   }
 
+  Future<void> _sharePost() async {
+    if (widget.selectedMedia.isEmpty) return;
+
+    setState(() => _isLoading = true);
+
+    try {
+      final token = Provider.of<AuthProvider>(context, listen: false).token;
+      
+      if (token == null) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Please login first'),
+            backgroundColor: Colors.red,
+          ),
+        );
+        return;
+      }
+
+      // Convert image to base64
+      String imageBase64;
+      if (kIsWeb) {
+        // For web, you'd need to handle this differently
+        // This is a placeholder
+        imageBase64 = widget.selectedMedia.first.path;
+      } else {
+        // Read file and convert to base64
+        final File imageFile = File(widget.selectedMedia.first.path);
+        final List<int> imageBytes = await imageFile.readAsBytes();
+        imageBase64 = base64Encode(imageBytes);
+      }
+
+      final post = await _postService.createPost(
+        imageBase64,
+        _captionController.text,
+        token,
+      );
+
+      if (post != null) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Post created successfully!'),
+            backgroundColor: Colors.green,
+          ),
+        );
+        Navigator.popUntil(context, (route) => route.isFirst);
+      } else {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Failed to create post'),
+            backgroundColor: Colors.red,
+          ),
+        );
+      }
+    } catch (e) {
+      print('Error sharing post: $e');
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('Error: $e'),
+          backgroundColor: Colors.red,
+        ),
+      );
+    } finally {
+      setState(() => _isLoading = false);
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -47,33 +121,38 @@ class _EditPostScreenState extends State<EditPostScreen> {
           style: TextStyle(color: Colors.white),
         ),
         actions: [
-          TextButton(
-            onPressed: () {
-              // Xử lý đăng bài
-              Navigator.popUntil(context, (route) => route.isFirst);
-            },
-            child: const Text(
-              'Share',
-              style: TextStyle(color: Colors.blue),
-            ),
-          ),
+          _isLoading
+              ? Center(
+                  child: SizedBox(
+                    width: 20,
+                    height: 20,
+                    child: CircularProgressIndicator(
+                      strokeWidth: 2,
+                      valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
+                    ),
+                  ),
+                )
+              : TextButton(
+                  onPressed: _sharePost,
+                  child: const Text(
+                    'Share',
+                    style: TextStyle(color: Colors.blue),
+                  ),
+                ),
         ],
       ),
       body: SingleChildScrollView(
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            // Hiển thị media đã chọn
+            // Display selected media with platform check
             if (widget.selectedMedia.isNotEmpty)
               Container(
                 height: 300,
                 width: double.infinity,
-                child: Image.file(
-                  File(widget.selectedMedia.first.path),
-                  fit: BoxFit.cover,
-                ),
+                child: _buildMediaPreview(widget.selectedMedia.first.path),
               ),
-            // Trường nhập caption
+            // Caption input field
             Padding(
               padding: const EdgeInsets.all(16),
               child: TextField(
@@ -86,7 +165,7 @@ class _EditPostScreenState extends State<EditPostScreen> {
                 ),
               ),
             ),
-            // Tùy chọn tag people
+            // Tag people option
             ListTile(
               leading: const Icon(Icons.person, color: Colors.white),
               title: const Text(
@@ -96,7 +175,7 @@ class _EditPostScreenState extends State<EditPostScreen> {
               trailing: const Icon(Icons.arrow_forward_ios, color: Colors.white, size: 16),
               onTap: _tagPeople,
             ),
-            // Hiển thị danh sách người đã tag
+            // Display tagged people list
             if (_taggedPeople.isNotEmpty)
               Padding(
                 padding: const EdgeInsets.symmetric(horizontal: 16),
@@ -118,5 +197,30 @@ class _EditPostScreenState extends State<EditPostScreen> {
         ),
       ),
     );
+  }
+  
+  // Helper method to handle platform differences
+  Widget _buildMediaPreview(String path) {
+    if (kIsWeb) {
+      // For web platform
+      return Image.network(
+        path,
+        fit: BoxFit.cover,
+        errorBuilder: (context, error, stackTrace) {
+          return Center(
+            child: Text(
+              'Failed to load image',
+              style: TextStyle(color: Colors.white),
+            ),
+          );
+        },
+      );
+    } else {
+      // For mobile platforms
+      return Image.file(
+        File(path),
+        fit: BoxFit.cover,
+      );
+    }
   }
 }

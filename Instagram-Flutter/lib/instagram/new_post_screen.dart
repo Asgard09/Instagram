@@ -3,6 +3,7 @@ import 'dart:io';
 import 'package:image_picker/image_picker.dart';
 import 'package:permission_handler/permission_handler.dart';
 import 'package:practice_widgets/instagram/story_screen.dart';
+import 'package:flutter/foundation.dart' show kIsWeb;
 
 import '../models/media_item.dart';
 import 'edit_post_screen.dart';
@@ -145,10 +146,7 @@ class _NewPostScreenState extends State<NewPostScreen> {
           child: Stack(
             fit: StackFit.expand,
             children: [
-              Image.file(
-                File(item.path),
-                fit: BoxFit.cover,
-              ),
+              _buildMediaPreview(item.path),
               if (isSelected)
                 Container(
                   color: Colors.blue.withOpacity(0.3),
@@ -169,6 +167,26 @@ class _NewPostScreenState extends State<NewPostScreen> {
         );
       },
     );
+  }
+
+  Widget _buildMediaPreview(String path) {
+    if (kIsWeb) {
+      return Image.network(
+        path,
+        fit: BoxFit.cover,
+        errorBuilder: (context, error, stackTrace) {
+          return Container(
+            color: Colors.grey[800],
+            child: Icon(Icons.image_not_supported, color: Colors.white54),
+          );
+        },
+      );
+    } else {
+      return Image.file(
+        File(path),
+        fit: BoxFit.cover,
+      );
+    }
   }
 
   Widget _buildBottomSection() {
