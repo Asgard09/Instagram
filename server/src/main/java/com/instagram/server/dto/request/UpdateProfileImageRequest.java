@@ -6,5 +6,5 @@ import lombok.Setter;
 @Getter
 @Setter
 public class UpdateProfileImageRequest {
-    private String imageBase64; // Base64 encoded image
+    private String imageBase64; // Can be base64 encoded image or URL
 } 

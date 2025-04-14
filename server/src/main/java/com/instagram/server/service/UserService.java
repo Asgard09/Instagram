@@ -92,7 +92,7 @@ public class UserService {
         }
         
         // Store new profile picture
-        String imageUrl = fileStorageService.storeBase64Image(
+        String imageUrl = fileStorageService.storeImage(
                 request.getImageBase64(), 
                 "profiles/" + user.getUserId()
         );

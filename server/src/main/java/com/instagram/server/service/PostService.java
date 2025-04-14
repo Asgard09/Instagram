@@ -48,7 +48,10 @@ public class PostService {
         if (request.getImageBase64() != null && !request.getImageBase64().isEmpty()) {
             for (String imageBase64 : request.getImageBase64()) {
                 // Store the image and get its URL
-                String imageUrl = fileStorageService.storeBase64Image(imageBase64, "posts/" + user.getUserId());
+                String imageUrl = fileStorageService.storeImage(
+                        imageBase64, 
+                        "posts/" + user.getUserId()
+                );
                 imageUrls.add(imageUrl);
             }
         }

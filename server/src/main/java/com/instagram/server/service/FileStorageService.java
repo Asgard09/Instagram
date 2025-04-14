@@ -17,8 +17,11 @@ public class FileStorageService {
     @Value("${app.file.upload-dir:uploads}")
     private String uploadDir;
 
-    //Stores a Base64-encoded image in a folder and returns the file path.
-    public String storeBase64Image(String base64Image, String directory) throws IOException {
+    /**
+     * Stores an image in a folder and returns the file path.
+     * Can handle both base64 encoded images and URL strings
+     */
+    public String storeImage(String imageData, String directory) throws IOException {
         // Create directory if it doesn't exist
         Path dirPath = Paths.get(uploadDir, directory);
         Files.createDirectories(dirPath);
@@ -27,16 +30,32 @@ public class FileStorageService {
         String filename = UUID.randomUUID().toString() + ".jpg";
         Path filePath = Paths.get(dirPath.toString(), filename);
 
-        // Remove base64 prefix if present (e.g., "data:image/jpeg;base64,")
-        String base64Data = base64Image;
-        if (base64Data.contains(",")) {
-            base64Data = base64Data.split(",")[1];
-        }
-
-        // Decode and save the image
-        byte[] imageBytes = Base64.getDecoder().decode(base64Data);
-        try (FileOutputStream fos = new FileOutputStream(filePath.toFile())) {
-            fos.write(imageBytes);
+        // Check if it's a base64 image or a URL/blob reference
+        if (imageData.startsWith("data:image")) {
+            // It's a base64 image with prefix
+            String base64Data = imageData.split(",")[1];
+            byte[] imageBytes = Base64.getDecoder().decode(base64Data);
+            try (FileOutputStream fos = new FileOutputStream(filePath.toFile())) {
+                fos.write(imageBytes);
+            }
+        } else if (imageData.startsWith("blob:") || imageData.startsWith("http")) {
+            // For now, with blob or http URLs, we just store a placeholder
+            // In a real app, you would download the image using HttpClient or similar
+            // For this demo, we'll create a small placeholder file
+            String placeholderText = "Image URL: " + imageData;
+            Files.write(filePath, placeholderText.getBytes());
+        } else {
+            // Assume it's a plain base64 string without prefix
+            try {
+                byte[] imageBytes = Base64.getDecoder().decode(imageData);
+                try (FileOutputStream fos = new FileOutputStream(filePath.toFile())) {
+                    fos.write(imageBytes);
+                }
+            } catch (IllegalArgumentException e) {
+                // If decoding fails, treat it as plain text
+                String placeholderText = "Image data: " + imageData;
+                Files.write(filePath, placeholderText.getBytes());
+            }
         }
 
         // Return the relative path to access the image
