@@ -35,6 +35,7 @@ public class SecurityConfig {
         this.userDetailsServiceImpl = userDetailsServiceImpl;
         this.jwtAuthenticationFilter = jwtAuthenticationFilter;
     }
+    
     @Bean
     SecurityFilterChain defaultSecurityFilterChain(HttpSecurity http) throws Exception {
         return http
@@ -44,7 +45,11 @@ public class SecurityConfig {
                         req -> req
                                 .requestMatchers(HttpMethod.OPTIONS, "/**").permitAll()
                                 .requestMatchers("/auth/login/**", "/auth/register/**").permitAll()
-                                .requestMatchers("/uploads/**").permitAll()
+                                .requestMatchers("/uploads/**", "/error/**").permitAll()
+                                .requestMatchers(HttpMethod.GET, "/api/posts", "/api/posts/**").permitAll()
+                                .requestMatchers(HttpMethod.POST, "/api/posts", "/api/posts/**").authenticated()
+                                .requestMatchers(HttpMethod.PUT, "/api/posts/**").authenticated()
+                                .requestMatchers(HttpMethod.DELETE, "/api/posts/**").authenticated()
                                 .anyRequest().authenticated()
                 ).userDetailsService(userDetailsServiceImpl)
                 .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
@@ -55,10 +60,10 @@ public class SecurityConfig {
     @Bean
     public CorsConfigurationSource corsConfigurationSource() {
         CorsConfiguration configuration = new CorsConfiguration();
-        configuration.setAllowedOrigins(List.of("*"));
+        configuration.setAllowedOrigins(Arrays.asList("*"));
         configuration.setAllowedMethods(Arrays.asList("GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"));
-        configuration.setAllowedHeaders(List.of("*"));
-        configuration.setExposedHeaders(List.of("x-auth-token"));
+        configuration.setAllowedHeaders(Arrays.asList("authorization", "content-type", "x-auth-token", "origin", "accept"));
+        configuration.setExposedHeaders(Arrays.asList("x-auth-token"));
         configuration.setAllowCredentials(false);
         UrlBasedCorsConfigurationSource source = new UrlBasedCorsConfigurationSource();
         source.registerCorsConfiguration("/**", configuration);

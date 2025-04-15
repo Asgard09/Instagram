@@ -67,6 +67,10 @@ public class PostService {
         return postRepository.findByUserOrderByCreatedAtDesc(user);
     }
 
+    public List<Post> getAllPosts() {
+        return postRepository.findAllByOrderByCreatedAtDesc();
+    }
+
     public List<Post> getNewsFeed() {
         // Get current user
         UserDetails userDetails = (UserDetails) SecurityContextHolder.getContext().getAuthentication().getPrincipal();
