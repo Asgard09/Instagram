@@ -6,6 +6,7 @@ import 'package:flutter/foundation.dart' show kIsWeb;
 import '../services/post_service.dart';
 import 'package:provider/provider.dart';
 import '../data/providers/auth_provider.dart';
+import '../data/providers/posts_provider.dart';
 
 class EditPostScreen extends StatefulWidget {
   final List<MediaItem> selectedMedia;
@@ -57,21 +58,12 @@ class _EditPostScreenState extends State<EditPostScreen> {
         return;
       }
 
-      // Convert image to base64
-      String imageBase64;
-      if (kIsWeb) {
-        // For web, you'd need to handle this differently
-        // This is a placeholder
-        imageBase64 = widget.selectedMedia.first.path;
-      } else {
-        // Read file and convert to base64
-        final File imageFile = File(widget.selectedMedia.first.path);
-        final List<int> imageBytes = await imageFile.readAsBytes();
-        imageBase64 = base64Encode(imageBytes);
-      }
+      // Just get the file path
+      final String imagePath = widget.selectedMedia.first.path;
 
+      // Call the updated method with file path
       final post = await _postService.createPost(
-        imageBase64,
+        imagePath,
         _captionController.text,
         token,
       );
@@ -201,26 +193,60 @@ class _EditPostScreenState extends State<EditPostScreen> {
   
   // Helper method to handle platform differences
   Widget _buildMediaPreview(String path) {
+    print('Building media preview for path: $path');
+    
     if (kIsWeb) {
-      // For web platform
-      return Image.network(
-        path,
-        fit: BoxFit.cover,
-        errorBuilder: (context, error, stackTrace) {
-          return Center(
-            child: Text(
-              'Failed to load image',
-              style: TextStyle(color: Colors.white),
-            ),
-          );
-        },
-      );
+      // For web platform - could be blob URL or regular URL
+      if (path.startsWith('blob:') || path.startsWith('http')) {
+        print('Loading web image from URL: $path');
+        return Image.network(
+          path,
+          fit: BoxFit.cover,
+          errorBuilder: (context, error, stackTrace) {
+            print('Error loading web image: $error');
+            return Center(
+              child: Text(
+                'Failed to load image: $error',
+                style: TextStyle(color: Colors.white),
+              ),
+            );
+          },
+        );
+      } else {
+        // Local file in web platform
+        return Center(
+          child: Text(
+            'Unsupported image source for web',
+            style: TextStyle(color: Colors.white),
+          ),
+        );
+      }
     } else {
-      // For mobile platforms
-      return Image.file(
-        File(path),
-        fit: BoxFit.cover,
-      );
+      // For mobile platforms - should be a local file path
+      try {
+        print('Loading mobile image from file: $path');
+        return Image.file(
+          File(path),
+          fit: BoxFit.cover,
+          errorBuilder: (context, error, stackTrace) {
+            print('Error loading image file: $error');
+            return Center(
+              child: Text(
+                'Failed to load image: $error',
+                style: TextStyle(color: Colors.white),
+              ),
+            );
+          },
+        );
+      } catch (e) {
+        print('Exception loading image file: $e');
+        return Center(
+          child: Text(
+            'Error: $e',
+            style: TextStyle(color: Colors.white),
+          ),
+        );
+      }
     }
   }
 }

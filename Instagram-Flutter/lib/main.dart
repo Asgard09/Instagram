@@ -4,12 +4,16 @@ import 'package:practice_widgets/instagram/login_screen.dart';
 import 'package:provider/provider.dart';
 
 import 'data/providers/auth_provider.dart';
+import 'data/providers/posts_provider.dart';
 import 'instagram/main_screen.dart';
 
 void main() {
   runApp(
-    ChangeNotifierProvider(
-      create: (_) => AuthProvider(),
+    MultiProvider(
+      providers: [
+        ChangeNotifierProvider(create: (_) => AuthProvider()),
+        ChangeNotifierProvider(create: (_) => PostsProvider()),
+      ],
       child: MyApp(),
     ),
   );

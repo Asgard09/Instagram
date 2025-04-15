@@ -1,6 +1,6 @@
 import 'package:flutter/foundation.dart';
-import '../models/post.dart';
-import '../services/post_service.dart';
+import '../../models/post.dart';
+import '../../services/post_service.dart';
 
 class PostsProvider extends ChangeNotifier {
   final PostService _postService = PostService();
