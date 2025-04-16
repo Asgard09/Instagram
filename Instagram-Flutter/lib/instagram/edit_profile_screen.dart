@@ -1,6 +1,12 @@
-import 'package:flutter/material.dart';
-import 'package:image_picker/image_picker.dart';
 import 'dart:io';
+import 'package:flutter/material.dart';
+import 'package:flutter/foundation.dart' show kIsWeb;
+import 'package:provider/provider.dart';
+import 'package:image_picker/image_picker.dart';
+import '../data/providers/auth_provider.dart';
+import '../data/providers/user_provider.dart';
+import '../models/user.dart';
+
 class EditProfileScreen extends StatefulWidget {
   const EditProfileScreen({Key? key}) : super(key: key);
 
@@ -9,99 +15,230 @@ class EditProfileScreen extends StatefulWidget {
 }
 
 class _EditProfileScreenState extends State<EditProfileScreen> {
-  File? _profilePicture;
-  final TextEditingController _nameController = TextEditingController(text: 'Nguyen Thanh Dat');
-  final TextEditingController _usernameController =
-  TextEditingController(text: 'nguyenthanhdat9290');
+  final TextEditingController _usernameController = TextEditingController();
+  final TextEditingController _nameController = TextEditingController();
   final TextEditingController _bioController = TextEditingController();
-  String _selectedGender = 'Prefer not to say';
+  Gender? _selectedGender;
+  String? _profileImagePath;
+  bool _isImageChanged = false;
+  
   final ImagePicker _picker = ImagePicker();
-
-  Future<void> _pickProfilePicture(ImageSource source) async {
-    final pickedFile = await _picker.pickImage(source: source);
-    if (pickedFile != null) {
-      setState(() {
-        _profilePicture = File(pickedFile.path);
-      });
+  
+  @override
+  void initState() {
+    super.initState();
+    
+    // Load the user data
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      final user = Provider.of<UserProvider>(context, listen: false).user;
+      if (user != null) {
+        _usernameController.text = user.username;
+        _nameController.text = user.name ?? '';
+        _bioController.text = user.bio ?? '';
+        _selectedGender = user.gender;
+      } else {
+        // Fetch user if not already loaded
+        _loadUserData();
+      }
+    });
+  }
+  
+  Future<void> _loadUserData() async {
+    final token = Provider.of<AuthProvider>(context, listen: false).token;
+    if (token != null) {
+      await Provider.of<UserProvider>(context, listen: false).fetchCurrentUser(token);
+      
+      // Update the form with fetched data
+      final user = Provider.of<UserProvider>(context, listen: false).user;
+      if (user != null) {
+        setState(() {
+          _usernameController.text = user.username;
+          _nameController.text = user.name ?? '';
+          _bioController.text = user.bio ?? '';
+          _selectedGender = user.gender;
+        });
+      }
     }
   }
-
-  void _showProfilePictureOptions() {
-    showModalBottomSheet(
-      context: context,
-      backgroundColor: Colors.grey[900],
-      shape: const RoundedRectangleBorder(
-        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
-      ),
-      builder: (context) => Column(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          ListTile(
-            leading: const Icon(Icons.photo_library, color: Colors.white),
-            title: const Text('Choose from library', style: TextStyle(color: Colors.white)),
-            onTap: () {
-              Navigator.pop(context);
-              _pickProfilePicture(ImageSource.gallery);
-            },
-          ),
-          ListTile(
-            leading: const Icon(Icons.facebook, color: Colors.white),
-            title: const Text('Import from Facebook', style: TextStyle(color: Colors.white)),
-            onTap: () {
-              Navigator.pop(context);
-              // TODO: Implement import from Facebook
-            },
-          ),
-          ListTile(
-            leading: const Icon(Icons.camera_alt, color: Colors.white),
-            title: const Text('Take photo', style: TextStyle(color: Colors.white)),
-            onTap: () {
-              Navigator.pop(context);
-              _pickProfilePicture(ImageSource.camera);
-            },
-          ),
-          const Padding(
-            padding: EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-            child: Text(
-              'Your profile picture and avatar are visible to everyone on and off Instagram. Learn more',
-              style: TextStyle(color: Colors.grey, fontSize: 12),
+  
+  Future<void> _pickImage() async {
+    try {
+      final XFile? pickedFile = await _picker.pickImage(
+        source: ImageSource.gallery,
+        maxWidth: 800,
+        maxHeight: 800,
+        imageQuality: 85,
+      );
+      
+      if (pickedFile != null) {
+        setState(() {
+          _profileImagePath = pickedFile.path;
+          _isImageChanged = true;
+        });
+      }
+    } catch (e) {
+      print('Error picking image: $e');
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Error picking image: $e')),
+      );
+    }
+  }
+  
+  Widget _buildProfileImage() {
+    final userProvider = Provider.of<UserProvider>(context);
+    final user = userProvider.user;
+    
+    if (_isImageChanged && _profileImagePath != null) {
+      // Show newly picked image
+      if (kIsWeb) {
+        // Web platforms
+        return CircleAvatar(
+          radius: 50,
+          backgroundColor: Colors.grey[200],
+          child: ClipOval(
+            child: Image.network(
+              _profileImagePath!,
+              width: 100,
+              height: 100,
+              fit: BoxFit.cover,
+              errorBuilder: (context, error, stackTrace) {
+                print('Error loading selected web image: $error');
+                return Icon(Icons.person, size: 50, color: Colors.grey[800]);
+              },
+              loadingBuilder: (context, child, loadingProgress) {
+                if (loadingProgress == null) return child;
+                return Center(
+                  child: CircularProgressIndicator(
+                    value: loadingProgress.expectedTotalBytes != null
+                        ? loadingProgress.cumulativeBytesLoaded /
+                          loadingProgress.expectedTotalBytes!
+                        : null,
+                    color: Colors.white,
+                  ),
+                );
+              },
             ),
           ),
-          const SizedBox(height: 16),
-        ],
-      ),
-    );
+        );
+      } else {
+        // Mobile platforms
+        return CircleAvatar(
+          radius: 50,
+          backgroundColor: Colors.grey[200],
+          backgroundImage: FileImage(File(_profileImagePath!)),
+          onBackgroundImageError: (exception, stackTrace) {
+            print('Error loading selected file image: $exception');
+          },
+        );
+      }
+    } else if (user?.profilePicture != null) {
+      // Show existing profile picture
+      String imageUrl = user!.profilePicture!;
+      
+      // Add server base URL if the path is relative
+      if (!imageUrl.startsWith('http')) {
+        String serverUrl = kIsWeb 
+            ? 'http://192.168.1.4:8080' 
+            : 'http://192.168.1.4:8080';
+        imageUrl = '$serverUrl/uploads/$imageUrl';
+      }
+      
+      print('Loading profile image from URL: $imageUrl');
+      
+      return CircleAvatar(
+        radius: 50,
+        backgroundColor: Colors.grey[200],
+        child: ClipOval(
+          child: Image.network(
+            imageUrl,
+            width: 100,
+            height: 100,
+            fit: BoxFit.cover,
+            errorBuilder: (context, error, stackTrace) {
+              print('Error loading profile image: $error');
+              return Icon(Icons.person, size: 50, color: Colors.grey[800]);
+            },
+            loadingBuilder: (context, child, loadingProgress) {
+              if (loadingProgress == null) return child;
+              return Center(
+                child: CircularProgressIndicator(
+                  value: loadingProgress.expectedTotalBytes != null
+                      ? loadingProgress.cumulativeBytesLoaded /
+                        loadingProgress.expectedTotalBytes!
+                      : null,
+                  color: Colors.white,
+                ),
+              );
+            },
+          ),
+        ),
+      );
+    } else {
+      // Show default avatar
+      return CircleAvatar(
+        radius: 50,
+        backgroundColor: Colors.grey[200],
+        child: Icon(Icons.person, size: 50, color: Colors.grey[800]),
+      );
+    }
   }
-
-  void _selectGender() async {
-    final result = await showModalBottomSheet<String>(
-      context: context,
-      backgroundColor: Colors.grey[900],
-      shape: const RoundedRectangleBorder(
-        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
-      ),
-      builder: (context) => Column(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          ListTile(
-            title: const Text('Male', style: TextStyle(color: Colors.white)),
-            onTap: () => Navigator.pop(context, 'Male'),
-          ),
-          ListTile(
-            title: const Text('Female', style: TextStyle(color: Colors.white)),
-            onTap: () => Navigator.pop(context, 'Female'),
-          ),
-          ListTile(
-            title: const Text('Prefer not to say', style: TextStyle(color: Colors.white)),
-            onTap: () => Navigator.pop(context, 'Prefer not to say'),
-          ),
-        ],
-      ),
+  
+  Future<void> _saveProfile() async {
+    final authProvider = Provider.of<AuthProvider>(context, listen: false);
+    final userProvider = Provider.of<UserProvider>(context, listen: false);
+    
+    final token = authProvider.token;
+    if (token == null) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('You need to be logged in')),
+      );
+      return;
+    }
+    
+    // Show loading indicator
+    ScaffoldMessenger.of(context).showSnackBar(
+      const SnackBar(content: Text('Saving profile...')),
     );
-    if (result != null) {
-      setState(() {
-        _selectedGender = result;
-      });
+    
+    bool success = true;
+    
+    // Update profile image if changed
+    if (_isImageChanged && _profileImagePath != null) {
+      print('Updating profile image with path: $_profileImagePath');
+      success = await userProvider.updateProfileImage(_profileImagePath!, token);
+      
+      if (!success) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text(userProvider.error ?? 'Failed to update profile image')),
+        );
+        return;
+      }
+    }
+    
+    // Update profile information
+    success = await userProvider.updateProfile(
+      token: token,
+      username: _usernameController.text,
+      name: _nameController.text,
+      bio: _bioController.text,
+      gender: _selectedGender,
+    );
+    
+    if (success) {
+      // Refresh user data to get updated profile
+      await userProvider.fetchCurrentUser(token);
+      
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Profile updated successfully!'),
+          backgroundColor: Colors.green,
+        ),
+      );
+      Navigator.pop(context);
+    } else {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text(userProvider.error ?? 'Failed to update profile')),
+      );
     }
   }
 
@@ -112,145 +249,190 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
       appBar: AppBar(
         backgroundColor: Colors.black,
         elevation: 0,
-        leading: IconButton(
-          icon: const Icon(Icons.arrow_back, color: Colors.white),
-          onPressed: () => Navigator.pop(context),
-        ),
         title: const Text(
-          'Edit profile',
+          'Edit Profile',
           style: TextStyle(color: Colors.white),
         ),
-      ),
-      body: SingleChildScrollView(
-        child: Padding(
-          padding: const EdgeInsets.all(16),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.center,
-            children: [
-              // Profile picture
-              GestureDetector(
-                onTap: _showProfilePictureOptions,
-                child: Stack(
-                  alignment: Alignment.center,
-                  children: [
-                    CircleAvatar(
-                      radius: 50,
-                      backgroundColor: Colors.grey[800],
-                      backgroundImage: _profilePicture != null
-                          ? FileImage(_profilePicture!)
-                          : null,
-                      child: _profilePicture == null
-                          ? const Icon(Icons.person, size: 50, color: Colors.grey)
-                          : null,
-                    ),
-                  ],
-                ),
-              ),
-              const SizedBox(height: 8),
-              GestureDetector(
-                onTap: _showProfilePictureOptions,
-                child: const Text(
-                  'Edit picture or avatar',
-                  style: TextStyle(color: Colors.blue, fontSize: 14),
-                ),
-              ),
-              const SizedBox(height: 24),
-
-              // Name
-              const Align(
-                alignment: Alignment.centerLeft,
-                child: Text(
-                  'Name',
-                  style: TextStyle(color: Colors.white, fontSize: 16),
-                ),
-              ),
-              const SizedBox(height: 8),
-              TextField(
-                controller: _nameController,
-                style: const TextStyle(color: Colors.white),
-                decoration: InputDecoration(
-                  filled: true,
-                  fillColor: Colors.grey[800],
-                  border: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(10),
-                    borderSide: BorderSide.none,
-                  ),
-                ),
-              ),
-              const SizedBox(height: 16),
-
-              // Username
-              const Align(
-                alignment: Alignment.centerLeft,
-                child: Text(
-                  'Username',
-                  style: TextStyle(color: Colors.white, fontSize: 16),
-                ),
-              ),
-              const SizedBox(height: 8),
-              TextField(
-                controller: _usernameController,
-                style: const TextStyle(color: Colors.white),
-                decoration: InputDecoration(
-                  filled: true,
-                  fillColor: Colors.grey[800],
-                  border: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(10),
-                    borderSide: BorderSide.none,
-                  ),
-                ),
-              ),
-              const SizedBox(height: 16),
-
-              // Bio
-              const Align(
-                alignment: Alignment.centerLeft,
-                child: Text(
-                  'Bio',
-                  style: TextStyle(color: Colors.white, fontSize: 16),
-                ),
-              ),
-              const SizedBox(height: 8),
-              TextField(
-                controller: _bioController,
-                style: const TextStyle(color: Colors.white),
-                maxLines: 3,
-                decoration: InputDecoration(
-                  filled: true,
-                  fillColor: Colors.grey[800],
-                  border: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(10),
-                    borderSide: BorderSide.none,
-                  ),
-                ),
-              ),
-              const SizedBox(height: 16),
-
-              // Gender
-              const Align(
-                alignment: Alignment.centerLeft,
-                child: Text(
-                  'Gender',
-                  style: TextStyle(color: Colors.white, fontSize: 16),
-                ),
-              ),
-              const SizedBox(height: 8),
-              ListTile(
-                title: Text(
-                  _selectedGender,
-                  style: const TextStyle(color: Colors.white),
-                ),
-                trailing: const Icon(Icons.arrow_drop_down, color: Colors.white),
-                onTap: _selectGender,
-                tileColor: Colors.grey[800],
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(10),
-                ),
-              ),
-            ],
-          ),
+        leading: IconButton(
+          icon: const Icon(Icons.close, color: Colors.white),
+          onPressed: () => Navigator.pop(context),
         ),
+        actions: [
+          IconButton(
+            icon: const Icon(Icons.check, color: Colors.blue),
+            onPressed: _saveProfile,
+          ),
+        ],
+      ),
+      body: Consumer<UserProvider>(
+        builder: (context, userProvider, child) {
+          if (userProvider.isLoading) {
+            return const Center(
+              child: CircularProgressIndicator(color: Colors.white),
+            );
+          }
+          
+          return SingleChildScrollView(
+            padding: const EdgeInsets.all(16.0),
+            child: Column(
+              children: [
+                // Profile picture
+                Center(
+                  child: GestureDetector(
+                    onTap: _pickImage,
+                    child: Stack(
+                      children: [
+                        _buildProfileImage(),
+                        Positioned(
+                          bottom: 0,
+                          right: 0,
+                          child: Container(
+                            padding: const EdgeInsets.all(4),
+                            decoration: BoxDecoration(
+                              color: Colors.blue,
+                              borderRadius: BorderRadius.circular(20),
+                            ),
+                            child: const Icon(
+                              Icons.camera_alt,
+                              color: Colors.white,
+                              size: 20,
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+                
+                const SizedBox(height: 24),
+                
+                // Username field
+                _buildTextField(
+                  controller: _usernameController,
+                  label: 'Username',
+                  hint: 'Enter your username',
+                ),
+                
+                const SizedBox(height: 16),
+                
+                // Name field
+                _buildTextField(
+                  controller: _nameController,
+                  label: 'Name',
+                  hint: 'Enter your name',
+                ),
+                
+                const SizedBox(height: 16),
+                
+                // Bio field
+                _buildTextField(
+                  controller: _bioController,
+                  label: 'Bio',
+                  hint: 'Tell something about yourself',
+                  maxLines: 3,
+                ),
+                
+                const SizedBox(height: 24),
+                
+                // Gender dropdown
+                Container(
+                  width: double.infinity,
+                  padding: const EdgeInsets.symmetric(horizontal: 12),
+                  decoration: BoxDecoration(
+                    color: Colors.grey[900],
+                    borderRadius: BorderRadius.circular(8),
+                  ),
+                  child: DropdownButtonHideUnderline(
+                    child: DropdownButton<Gender>(
+                      dropdownColor: Colors.grey[900],
+                      value: _selectedGender,
+                      hint: const Text('Select Gender', style: TextStyle(color: Colors.grey)),
+                      style: const TextStyle(color: Colors.white),
+                      onChanged: (Gender? newValue) {
+                        setState(() {
+                          _selectedGender = newValue;
+                        });
+                      },
+                      items: Gender.values.map<DropdownMenuItem<Gender>>((Gender gender) {
+                        return DropdownMenuItem<Gender>(
+                          value: gender,
+                          child: Text(
+                            _getGenderDisplayName(gender),
+                            style: const TextStyle(color: Colors.white),
+                          ),
+                        );
+                      }).toList(),
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          );
+        },
       ),
     );
+  }
+  
+  String _getGenderDisplayName(Gender gender) {
+    switch (gender) {
+      case Gender.MALE:
+        return 'Male';
+      case Gender.FEMALE:
+        return 'Female';
+      case Gender.OTHER:
+        return 'Other';
+      case Gender.PREFER_NOT_TO_SAY:
+        return 'Prefer not to say';
+      default:
+        return 'Unknown';
+    }
+  }
+  
+  Widget _buildTextField({
+    required TextEditingController controller,
+    required String label,
+    required String hint,
+    int maxLines = 1,
+  }) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(
+          label,
+          style: const TextStyle(
+            color: Colors.white,
+            fontWeight: FontWeight.bold,
+          ),
+        ),
+        const SizedBox(height: 8),
+        TextField(
+          controller: controller,
+          style: const TextStyle(color: Colors.white),
+          maxLines: maxLines,
+          decoration: InputDecoration(
+            hintText: hint,
+            hintStyle: TextStyle(color: Colors.grey[600]),
+            filled: true,
+            fillColor: Colors.grey[900],
+            border: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(8),
+              borderSide: BorderSide.none,
+            ),
+            contentPadding: const EdgeInsets.symmetric(
+              horizontal: 16,
+              vertical: 14,
+            ),
+          ),
+        ),
+      ],
+    );
+  }
+  
+  @override
+  void dispose() {
+    _usernameController.dispose();
+    _nameController.dispose();
+    _bioController.dispose();
+    super.dispose();
   }
 }

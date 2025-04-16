@@ -14,28 +14,33 @@ class MainScreen extends StatefulWidget {
 }
 
 class _MainScreenState extends State<MainScreen> {
-  int _selectedIndex = 0;
-
-  // List of screens
-  static final List<Widget> _widgetOptions = <Widget>[
-    HomeScreen(),
-    SearchScreen(),
-    ReelsScreen(),
-    ProfileScreen(),
+  int _currentIndex = 0;
+  final List<Widget> _screens = [
+    const HomeScreen(),
+    const Scaffold(body: Center(child: Text('Search', style: TextStyle(color: Colors.white)))),
+    const Scaffold(body: Center(child: Text('Add Post', style: TextStyle(color: Colors.white)))),
+    const Scaffold(body: Center(child: Text('Reels', style: TextStyle(color: Colors.white)))),
+    const ProfileScreen(),
   ];
 
   // List of icons for the bottom navigation
   final List<IconData> _navigationIcons = [
     Icons.home,
     Icons.search_outlined,
+    Icons.add_box_outlined,
     Icons.smart_display_outlined,
     Icons.person,
   ];
 
   void _onItemTapped(int index) {
-    setState(() {
-      _selectedIndex = index;
-    });
+    // If add button (index 2) is tapped, open post screen instead of switching
+    if (index == 2) {
+      _openPostScreen();
+    } else {
+      setState(() {
+        _currentIndex = index;
+      });
+    }
   }
 
   void _openPostScreen() {
@@ -49,30 +54,18 @@ class _MainScreenState extends State<MainScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: Colors.black,
-      body: _widgetOptions.elementAt(_selectedIndex),
+      body: _screens.elementAt(_currentIndex),
       bottomNavigationBar: Container(
-        height: 100,
+        height: 60,
         color: Colors.black,
         child: Row(
           mainAxisAlignment: MainAxisAlignment.spaceEvenly,
           children: [
-            // First two icons
-            _buildNavItem(0),
-            _buildNavItem(1),
-
-            // Add button in the middle
-            GestureDetector(
-              onTap: _openPostScreen,
-              child: const Icon(
-                Icons.add_box_outlined,
-                size: 30,
-                color: Colors.white,
-              ),
-            ),
-
-            // Last two icons
-            _buildNavItem(2),
-            _buildNavItem(3),
+            _buildNavItem(0), // Home
+            _buildNavItem(1), // Search
+            _buildNavItem(2), // Add
+            _buildNavItem(3), // Reels
+            _buildNavItem(4), // Profile
           ],
         ),
       ),
@@ -81,14 +74,14 @@ class _MainScreenState extends State<MainScreen> {
 
   // Build a navigation item
   Widget _buildNavItem(int index) {
-    bool isSelected = index == _selectedIndex;
+    bool isSelected = index == _currentIndex;
     return GestureDetector(
       onTap: () => _onItemTapped(index),
       child: Container(
         padding: const EdgeInsets.all(8),
         child: Icon(
           _navigationIcons[index],
-          size: 40,
+          size: 30,
           color: isSelected ? Colors.white : Colors.grey,
         ),
       ),

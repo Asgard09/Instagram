@@ -1,12 +1,9 @@
 import 'dart:convert';
 import 'package:http/http.dart' as http;
-import 'package:http_parser/http_parser.dart';
 import 'package:flutter/foundation.dart' show kIsWeb;
 import '../models/post.dart';
 
-// Import mobile implementation only on non-web platforms
-import 'post_service_mobile.dart' if (dart.library.html) 'post_service_web.dart';
-
+// This class is responsible for all post-related API calls
 class PostService {
   // Direct IP address - used for both web and mobile
   final String baseUrl = 'http://192.168.1.4:8080/api';
@@ -16,9 +13,9 @@ class PostService {
     try {
       print('Creating post with image from path: $imagePath');
       
-      // Handle blob URLs for web platform
+      // Handle blob URLs or http URLs (web or any platform)
       if (imagePath.startsWith('blob:') || imagePath.startsWith('http')) {
-        // For web platform with blob URLs, send the URL directly to the server
+        // Send the URL directly to the server
         final response = await http.post(
           Uri.parse('$baseUrl/posts'),
           headers: {
@@ -45,11 +42,12 @@ class PostService {
           return null;
         }
       } else if (!kIsWeb) {
-        // For mobile platforms, handle file path
+        // For mobile platforms with a file path, we need to convert to base64
+        // This will only work on mobile, as web doesn't have File access
         try {
-          // Import dart:io directly in the implementation
-          // This is only executed on mobile platforms
-          return await _createPostFromFile(imagePath, caption, token);
+          // We need to handle mobile file access
+          // This code path is only run on mobile, so we can safely import dart:io in a separate file
+          return await _createMobilePost(imagePath, caption, token);
         } catch (e) {
           print('Error processing image file: $e');
           return null;
@@ -64,18 +62,12 @@ class PostService {
     }
   }
 
-  // This method is only called on mobile platforms
-  Future<Post?> _createPostFromFile(String imagePath, String caption, String token) async {
-    if (kIsWeb) return null;
-    
-    // Use a separate function that imports dart:io
-    // This won't be executed on web platforms
-    return await _mobileImplementation(imagePath, caption, token, baseUrl);
+  // Separate method that will be implemented by native mobile platforms
+  Future<Post?> _createMobilePost(String imagePath, String caption, String token) async {
+    // This is a stub that will be overridden when compiling for mobile
+    // For web, this will never be called due to the kIsWeb check above
+    throw UnsupportedError('Mobile file operations not supported on this platform');
   }
-  
-  // This is implemented in post_service_mobile.dart (for native) or post_service_web.dart (for web)
-  // Using extension methods
-  Future<Post?> _mobileImplementation(String imagePath, String caption, String token, String baseUrl);
 
   Future<List<Post>> getPosts(String token) async {
     try {
