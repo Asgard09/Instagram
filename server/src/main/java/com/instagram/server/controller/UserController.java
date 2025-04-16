@@ -9,6 +9,8 @@ import com.instagram.server.entity.User;
 import com.instagram.server.service.UserService;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.security.core.context.SecurityContextHolder;
+import org.springframework.security.core.userdetails.UserDetails;
 
 import java.io.IOException;
 
@@ -85,6 +87,24 @@ public class UserController {
             e.printStackTrace();
             return ResponseEntity.status(500)
                     .body("Error updating profile: " + e.getMessage());
+        }
+    }
+
+    @GetMapping("/me")
+    public ResponseEntity<User> getCurrentUser() {
+        try {
+            // Get the currently authenticated user
+            UserDetails userDetails = (UserDetails) SecurityContextHolder.getContext().getAuthentication().getPrincipal();
+            String username = userDetails.getUsername();
+            
+            // Use the userService to find the current user
+            User user = userService.getCurrentUser();
+            
+            return ResponseEntity.ok(user);
+        } catch (Exception e) {
+            System.err.println("Error fetching current user: " + e.getMessage());
+            e.printStackTrace();
+            return ResponseEntity.status(500).build();
         }
     }
 }

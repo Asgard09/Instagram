@@ -101,4 +101,17 @@ public class UserService {
         user.setProfilePicture(imageUrl);
         return userRepository.save(user);
     }
+
+    /**
+     * Get the currently authenticated user
+     */
+    public User getCurrentUser() {
+        // Get current authenticated user
+        UserDetails userDetails = (UserDetails) SecurityContextHolder.getContext().getAuthentication().getPrincipal();
+        String username = userDetails.getUsername();
+
+        // Find and return user
+        return userRepository.findByUsername(username)
+                .orElseThrow(() -> new RuntimeException("User not found"));
+    }
 } 
