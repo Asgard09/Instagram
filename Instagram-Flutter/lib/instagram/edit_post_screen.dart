@@ -204,12 +204,33 @@ class _EditPostScreenState extends State<EditPostScreen> {
         return Image.network(
           path,
           fit: BoxFit.cover,
+          loadingBuilder: (context, child, loadingProgress) {
+            if (loadingProgress == null) return child;
+            return Center(
+              child: CircularProgressIndicator(
+                value: loadingProgress.expectedTotalBytes != null
+                    ? loadingProgress.cumulativeBytesLoaded / loadingProgress.expectedTotalBytes!
+                    : null,
+                color: Colors.white,
+              ),
+            );
+          },
           errorBuilder: (context, error, stackTrace) {
             print('Error loading web image: $error');
-            return Center(
-              child: Text(
-                'Failed to load image: $error',
-                style: TextStyle(color: Colors.white),
+            return Container(
+              color: Colors.grey[800],
+              child: Center(
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Icon(Icons.broken_image, color: Colors.white54, size: 40),
+                    SizedBox(height: 8),
+                    Text(
+                      'Image load error',
+                      style: TextStyle(color: Colors.white60),
+                    ),
+                  ],
+                ),
               ),
             );
           },

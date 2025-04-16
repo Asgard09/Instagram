@@ -19,10 +19,10 @@ class _HomeScreenState extends State<HomeScreen> {
   String get serverBaseUrl {
     if (kIsWeb) {
       // Use the specific IP for web
-      return 'http://192.168.1.4:8080';
+      return 'http://192.168.1.238:8080';
     } else {
       // For mobile platforms
-      return 'http://192.168.1.4:8080';
+      return 'http://192.168.1.238:8080';
     }
   }
 
@@ -140,6 +140,21 @@ class PostItem extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    // Debug post data
+    print('Building PostItem with post ID: ${post.id}');
+    print('Post username: ${post.username}');
+    print('Post userId: ${post.userId}');
+    
+    // Determine username to display
+    String displayName = "Instagram User";
+    if (post.username != null && post.username!.isNotEmpty) {
+      displayName = post.username!;
+      print('Using post.username: $displayName');
+    } else if (post.userId != null) {
+      displayName = 'User ${post.userId}';
+      print('Using post.userId: $displayName');
+    }
+    
     return Container(
       margin: const EdgeInsets.only(bottom: 10),
       child: Column(
@@ -157,7 +172,7 @@ class PostItem extends StatelessWidget {
                 ),
                 SizedBox(width: 8),
                 Text(
-                  post.userId != null ? 'User ${post.userId}' : 'Instagram User',
+                  displayName,
                   style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold),
                 ),
                 Spacer(),

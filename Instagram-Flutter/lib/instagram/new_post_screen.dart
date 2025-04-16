@@ -174,10 +174,24 @@ class _NewPostScreenState extends State<NewPostScreen> {
       return Image.network(
         path,
         fit: BoxFit.cover,
+        loadingBuilder: (context, child, loadingProgress) {
+          if (loadingProgress == null) return child;
+          return Center(
+            child: CircularProgressIndicator(
+              value: loadingProgress.expectedTotalBytes != null
+                  ? loadingProgress.cumulativeBytesLoaded / loadingProgress.expectedTotalBytes!
+                  : null,
+              color: Colors.white,
+            ),
+          );
+        },
         errorBuilder: (context, error, stackTrace) {
+          print('Error loading web image: $error');
           return Container(
             color: Colors.grey[800],
-            child: Icon(Icons.image_not_supported, color: Colors.white54),
+            child: Center(
+              child: Icon(Icons.image_not_supported, color: Colors.white54),
+            ),
           );
         },
       );
@@ -185,6 +199,15 @@ class _NewPostScreenState extends State<NewPostScreen> {
       return Image.file(
         File(path),
         fit: BoxFit.cover,
+        errorBuilder: (context, error, stackTrace) {
+          print('Error loading file image: $error');
+          return Container(
+            color: Colors.grey[800],
+            child: Center(
+              child: Icon(Icons.image_not_supported, color: Colors.white54),
+            ),
+          );
+        },
       );
     }
   }
