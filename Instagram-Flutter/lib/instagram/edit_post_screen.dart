@@ -7,6 +7,7 @@ import '../services/post_service.dart';
 import 'package:provider/provider.dart';
 import '../data/providers/auth_provider.dart';
 import '../data/providers/posts_provider.dart';
+import '../services/platform_helper_io.dart' if (dart.library.html) '../services/platform_helper_web.dart';
 
 class EditPostScreen extends StatefulWidget {
   final List<MediaItem> selectedMedia;
