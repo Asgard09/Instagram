@@ -6,10 +6,6 @@ import 'package:flutter/foundation.dart' show kIsWeb;
 import '../data/providers/auth_provider.dart';
 import '../data/providers/posts_provider.dart';
 import '../models/post.dart';
-import '../services/platform_helper.dart';
-
-// Make sure the imports don't reference dart:io directly
-import '../services/platform_helper_io.dart' if (dart.library.html) '../services/platform_helper_web.dart';
 
 class HomeScreen extends StatefulWidget {
   const HomeScreen({Key? key}) : super(key: key);
@@ -21,17 +17,13 @@ class HomeScreen extends StatefulWidget {
 class _HomeScreenState extends State<HomeScreen> {
   // Helper method to get the base URL for server resources
   String get serverBaseUrl {
-    final String localhost = 'localhost:8080';
-    final String networkIp = '192.168.1.4:8080'; // Update with your PC's IP
-    
     if (kIsWeb) {
+      // Use the specific IP for web
+      return 'http://192.168.1.4:8080';
+    } else {
+      // For mobile platforms
       return 'http://192.168.1.4:8080';
     }
-    
-    // Use platform helper for native URL
-    final apiUrl = PlatformHelper.getBaseUrl(localhost, networkIp);
-    // Remove '/api' suffix for resource URLs
-    return apiUrl.replaceAll('/api', '');
   }
 
   @override

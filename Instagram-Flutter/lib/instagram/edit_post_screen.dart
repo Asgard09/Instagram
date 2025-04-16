@@ -7,7 +7,8 @@ import '../services/post_service.dart';
 import 'package:provider/provider.dart';
 import '../data/providers/auth_provider.dart';
 import '../data/providers/posts_provider.dart';
-import '../services/platform_helper_io.dart' if (dart.library.html) '../services/platform_helper_web.dart';
+// Import for non-web platforms only
+import 'dart:io' if (dart.library.html) 'package:flutter/foundation.dart';
 
 class EditPostScreen extends StatefulWidget {
   final List<MediaItem> selectedMedia;
@@ -226,19 +227,8 @@ class _EditPostScreenState extends State<EditPostScreen> {
       // For mobile platforms - should be a local file path
       try {
         print('Loading mobile image from file: $path');
-        return Image.file(
-          File(path),
-          fit: BoxFit.cover,
-          errorBuilder: (context, error, stackTrace) {
-            print('Error loading image file: $error');
-            return Center(
-              child: Text(
-                'Failed to load image: $error',
-                style: TextStyle(color: Colors.white),
-              ),
-            );
-          },
-        );
+        // Use the File class only in non-web environment
+        return _buildNativeImagePreview(path);
       } catch (e) {
         print('Exception loading image file: $e');
         return Center(
@@ -249,5 +239,27 @@ class _EditPostScreenState extends State<EditPostScreen> {
         );
       }
     }
+  }
+  
+  // This is only called on mobile platforms
+  Widget _buildNativeImagePreview(String path) {
+    // Only for non-web platforms
+    if (kIsWeb) {
+      return Text('Native image preview not supported on web');
+    }
+    
+    return Image.file(
+      File(path),  // File from dart:io, not available on web
+      fit: BoxFit.cover,
+      errorBuilder: (context, error, stackTrace) {
+        print('Error loading image file: $error');
+        return Center(
+          child: Text(
+            'Failed to load image: $error',
+            style: TextStyle(color: Colors.white),
+          ),
+        );
+      },
+    );
   }
 }
