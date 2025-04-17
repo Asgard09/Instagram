@@ -6,6 +6,7 @@ import 'package:flutter/foundation.dart' show kIsWeb;
 import '../data/providers/auth_provider.dart';
 import '../data/providers/posts_provider.dart';
 import '../models/post.dart';
+import '../widgets/popup_comment.dart';
 import 'user_profile_screen.dart';
 import '../data/providers/likes_provider.dart';
 
@@ -21,10 +22,10 @@ class _HomeScreenState extends State<HomeScreen> {
   String get serverBaseUrl {
     if (kIsWeb) {
       // Use the specific IP for web
-      return 'http://192.168.1.169:8080';
+      return 'http://192.168.1.5:8080';
     } else {
       // For mobile platforms
-      return 'http://192.168.1.169:8080';
+      return 'http://192.168.1.5:8080';
     }
   }
 
@@ -154,7 +155,20 @@ class _PostItemState extends State<PostItem> {
     super.initState();
     _fetchLikeData();
   }
-
+  void _showCommentsSheet() {
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: Colors.transparent,
+      builder: (context) => CommentsBottomSheet(
+        postId: int.parse(widget.post.id.toString()),
+        onCommentSubmitted: (comment) {
+          // You can do something when a comment is posted
+          // For example, update a counter
+        },
+      ),
+    );
+  }
   Future<void> _fetchLikeData() async {
     final token = Provider.of<AuthProvider>(context, listen: false).token;
     if (token != null && widget.post.id != null) {
@@ -304,8 +318,8 @@ class _PostItemState extends State<PostItem> {
                     ),
                   ),
                 IconButton(
-                  icon: Icon(Icons.chat_bubble_outline, color: Colors.white),
-                  onPressed: () {},
+                  icon: const Icon(Icons.chat_bubble_outline, color: Colors.white),
+                  onPressed: _showCommentsSheet,
                 ),
                 IconButton(
                   icon: Icon(Icons.send_outlined, color: Colors.white),
