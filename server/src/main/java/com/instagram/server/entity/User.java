@@ -1,5 +1,8 @@
 package com.instagram.server.entity;
 
+import com.fasterxml.jackson.annotation.JsonIdentityInfo;
+import com.fasterxml.jackson.annotation.JsonIgnore;
+import com.fasterxml.jackson.annotation.ObjectIdGenerators;
 import com.instagram.server.base.Gender;
 import jakarta.persistence.*;
 import lombok.Getter;
@@ -16,6 +19,10 @@ import java.util.Set;
 @Table(name = "users")
 @Getter
 @Setter
+@JsonIdentityInfo(
+    generator = ObjectIdGenerators.PropertyGenerator.class,
+    property = "userId"
+)
 public class User implements UserDetails {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
@@ -47,6 +54,7 @@ public class User implements UserDetails {
     private Date createdAt;
 
     @OneToMany(mappedBy = "user")
+    @JsonIgnore
     private List<Post> posts;
 
     @OneToMany(mappedBy = "user")

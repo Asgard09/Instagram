@@ -3,7 +3,9 @@ package com.instagram.server.controller;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.instagram.server.dto.request.CreatePostRequest;
+import com.instagram.server.dto.response.PostResponse;
 import com.instagram.server.entity.Post;
+import com.instagram.server.entity.User;
 import com.instagram.server.service.PostService;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
@@ -12,6 +14,7 @@ import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
+import java.util.stream.Collectors;
 
 @RestController
 @RequestMapping("/api/posts")
@@ -77,7 +80,7 @@ public class PostController {
             }
             
             Post createdPost = postService.createPost(request);
-            return ResponseEntity.ok(createdPost);
+            return ResponseEntity.ok(convertToPostResponse(createdPost));
         } catch (IOException e) {
             System.err.println("Error processing image: " + e.getMessage());
             return ResponseEntity.status(500)
@@ -91,17 +94,47 @@ public class PostController {
     }
 
     @GetMapping
-    public ResponseEntity<List<Post>> getAllPosts() {
-        return ResponseEntity.ok(postService.getAllPosts());
+    public ResponseEntity<List<PostResponse>> getAllPosts() {
+        List<Post> posts = postService.getAllPosts();
+        List<PostResponse> postResponses = posts.stream()
+                .map(this::convertToPostResponse)
+                .collect(Collectors.toList());
+        return ResponseEntity.ok(postResponses);
     }
 
     @GetMapping("/user/{username}")
-    public ResponseEntity<List<Post>> getUserPosts(@PathVariable String username) {
-        return ResponseEntity.ok(postService.getUserPosts(username));
+    public ResponseEntity<List<PostResponse>> getUserPosts(@PathVariable String username) {
+        List<Post> posts = postService.getUserPosts(username);
+        List<PostResponse> postResponses = posts.stream()
+                .map(this::convertToPostResponse)
+                .collect(Collectors.toList());
+        return ResponseEntity.ok(postResponses);
     }
 
     @GetMapping("/feed")
-    public ResponseEntity<List<Post>> getNewsFeed() {
-        return ResponseEntity.ok(postService.getNewsFeed());
+    public ResponseEntity<List<PostResponse>> getNewsFeed() {
+        List<Post> posts = postService.getNewsFeed();
+        List<PostResponse> postResponses = posts.stream()
+                .map(this::convertToPostResponse)
+                .collect(Collectors.toList());
+        return ResponseEntity.ok(postResponses);
+    }
+    
+    // Helper method to convert Post to PostResponse
+    private PostResponse convertToPostResponse(Post post) {
+        PostResponse response = new PostResponse();
+        response.setPostId(post.getPostId());
+        response.setCaption(post.getCaption());
+        response.setContent(post.getContent());
+        response.setCreatedAt(post.getCreatedAt());
+        response.setImageUrls(post.getImageUrls());
+        
+        // Extract user information
+        if (post.getUser() != null) {
+            response.setUserId(post.getUser().getUserId());
+            response.setUsername(post.getUser().getUsername());
+        }
+        
+        return response;
     }
 }

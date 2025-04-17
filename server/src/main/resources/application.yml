@@ -2,9 +2,9 @@ server:
   port: 8080
 spring:
   datasource:
-    url: ${DB_URL}
-    username: ${DB_USERNAME}
-    password: ${DB_PASSWORD}
+    url: jdbc:mysql://localhost:3307/instagram
+    username: root
+    password: 09102004phuc
     driver-class-name: com.mysql.cj.jdbc.Driver
   jpa:
     hibernate:
@@ -15,8 +15,8 @@ spring:
         dialect: org.hibernate.dialect.MySQLDialect
   security:
     user:
-      name: ${SECURITY_USERNAME}
-      password: ${SECURITY_PASSWORD}
+      name: Asgard
+      password: 09102004
   #    oauth2:
   #        client:
   #            registration:

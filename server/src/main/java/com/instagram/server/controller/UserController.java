@@ -16,6 +16,7 @@ import java.io.IOException;
 
 @RestController
 @RequestMapping("/api/users")
+@CrossOrigin(origins = "*", maxAge = 3600)
 public class UserController {
     private final UserService userService;
 
@@ -92,19 +93,33 @@ public class UserController {
 
     @GetMapping("/me")
     public ResponseEntity<User> getCurrentUser() {
+        UserDetails userDetails = (UserDetails) SecurityContextHolder.getContext().getAuthentication().getPrincipal();
+        User user = userService.getUserByUsername(userDetails.getUsername());
+        return ResponseEntity.ok(user);
+    }
+
+    @GetMapping("/by-username/{username}")
+    public ResponseEntity<?> getUserByUsername(@PathVariable String username) {
         try {
-            // Get the currently authenticated user
-            UserDetails userDetails = (UserDetails) SecurityContextHolder.getContext().getAuthentication().getPrincipal();
-            String username = userDetails.getUsername();
-            
-            // Use the userService to find the current user
-            User user = userService.getCurrentUser();
-            
-            return ResponseEntity.ok(user);
+            User user = userService.getUserByUsername(username);
+            if (user != null) {
+                // Create a clean copy without sensitive info
+                User cleanUser = new User();
+                cleanUser.setUserId(user.getUserId());
+                cleanUser.setUsername(user.getUsername());
+                cleanUser.setName(user.getName());
+                cleanUser.setBio(user.getBio());
+                cleanUser.setProfilePicture(user.getProfilePicture());
+                cleanUser.setGender(user.getGender());
+                cleanUser.setCreatedAt(user.getCreatedAt());
+                // Don't include posts to avoid potential JSON issues
+                
+                return ResponseEntity.ok(cleanUser);
+            } else {
+                return ResponseEntity.notFound().build();
+            }
         } catch (Exception e) {
-            System.err.println("Error fetching current user: " + e.getMessage());
-            e.printStackTrace();
-            return ResponseEntity.status(500).build();
+            return ResponseEntity.status(500).body("Error retrieving user: " + e.getMessage());
         }
     }
 }
