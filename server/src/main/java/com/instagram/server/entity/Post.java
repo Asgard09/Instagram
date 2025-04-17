@@ -16,6 +16,10 @@ import java.util.List;
 @Entity
 @Data
 @Table(name = "posts")
+@JsonIdentityInfo(
+        generator = ObjectIdGenerators.PropertyGenerator.class,
+        property = "postId"
+)
 public class Post {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
