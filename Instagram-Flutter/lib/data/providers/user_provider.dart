@@ -124,6 +124,33 @@ class UserProvider extends ChangeNotifier {
     }
   }
 
+  // Get another user's profile by username
+  Future<User?> fetchUserByUsername(String username, String token) async {
+    _isLoading = true;
+    _error = null;
+    notifyListeners();
+
+    try {
+      final user = await _userService.getUserByUsername(username, token);
+      if (user != null) {
+        _user = user;
+        _isLoading = false;
+        notifyListeners();
+        return user;
+      } else {
+        _error = 'User not found';
+        _isLoading = false;
+        notifyListeners();
+        return null;
+      }
+    } catch (e) {
+      _error = e.toString();
+      _isLoading = false;
+      notifyListeners();
+      return null;
+    }
+  }
+
   // Clear user data (for logout)
   void clearUser() {
     _user = null;

@@ -6,6 +6,7 @@ import 'package:flutter/foundation.dart' show kIsWeb;
 import '../data/providers/auth_provider.dart';
 import '../data/providers/posts_provider.dart';
 import '../models/post.dart';
+import 'user_profile_screen.dart';
 
 class HomeScreen extends StatefulWidget {
   const HomeScreen({Key? key}) : super(key: key);
@@ -19,10 +20,10 @@ class _HomeScreenState extends State<HomeScreen> {
   String get serverBaseUrl {
     if (kIsWeb) {
       // Use the specific IP for web
-      return 'http://192.168.1.238:8080';
+      return 'http://192.168.1.169:8080';
     } else {
       // For mobile platforms
-      return 'http://192.168.1.238:8080';
+      return 'http://192.168.1.169:8080';
     }
   }
 
@@ -171,9 +172,27 @@ class PostItem extends StatelessWidget {
                   child: Icon(Icons.person, color: Colors.white, size: 18),
                 ),
                 SizedBox(width: 8),
-                Text(
-                  displayName,
-                  style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold),
+                GestureDetector(
+                  onTap: () {
+                    if (post.username != null && post.username!.isNotEmpty) {
+                      print('Navigating to profile of user: ${post.username}');
+                      Navigator.push(
+                        context,
+                        MaterialPageRoute(
+                          builder: (context) => UserProfileScreen(
+                            username: post.username!,
+                          ),
+                        ),
+                      );
+                    }
+                  },
+                  child: Text(
+                    displayName,
+                    style: TextStyle(
+                      color: Colors.white,
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
                 ),
                 Spacer(),
                 IconButton(

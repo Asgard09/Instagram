@@ -5,7 +5,7 @@ import 'package:http/http.dart' as http;
 import '../models/user.dart';
 
 class UserService {
-  final String baseUrl = 'http://192.168.1.238:8080/api';
+  final String baseUrl = 'http://192.168.1.169:8080/api';
 
   // Get the current user's profile
   Future<User?> getCurrentUser(String token) async {
@@ -200,6 +200,77 @@ class UserService {
       return user;
     } else {
       print('Failed to update profile image: ${response.statusCode}');
+      return null;
+    }
+  }
+
+  // Get a user's profile by username
+  Future<User?> getUserByUsername(String username, String token) async {
+    try {
+      print('Fetching user profile for username: $username');
+      
+      final response = await http.get(
+        Uri.parse('$baseUrl/users/by-username/$username'),
+        headers: {
+          'Authorization': 'Bearer $token',
+          'Accept': 'application/json',
+        },
+      );
+
+      print('Response status for $username profile: ${response.statusCode}');
+      
+      // Print readable preview of response
+      if (response.body.length > 200) {
+        print('Response preview: ${response.body.substring(0, 200)}...');
+      } else {
+        print('Response body: ${response.body}');
+      }
+
+      if (response.statusCode == 200) {
+        try {
+          final responseJson = json.decode(response.body);
+          print('Successfully parsed JSON for user: $username');
+          
+          if (responseJson is Map<String, dynamic>) {
+            // Clean up the posts field if it exists and is corrupted
+            if (responseJson.containsKey('posts') && 
+                (responseJson['posts'] == null || 
+                 responseJson['posts'] is String || 
+                 (responseJson['posts'] is String && responseJson['posts'].contains(']]}')))) {
+              print('Removing corrupted posts field from user data');
+              responseJson.remove('posts');
+            }
+            
+            return User.fromJson(responseJson);
+          } else {
+            print('Unexpected response format for $username: not a JSON object');
+            return null;
+          }
+        } catch (jsonError) {
+          print('JSON parsing error for $username: $jsonError');
+          print('Trying to extract user data from raw response...');
+          
+          // Attempt to extract basic user info if JSON is corrupted
+          try {
+            // Create a minimal user object with just the username
+            return User(
+              username: username,
+              // Add other fields if we can safely extract them
+            );
+          } catch (e) {
+            print('Failed to create fallback user object: $e');
+            return null;
+          }
+        }
+      } else {
+        print('Failed to get user profile for $username: ${response.statusCode}');
+        if (response.statusCode == 404) {
+          print('User not found');
+        }
+        return null;
+      }
+    } catch (e) {
+      print('Error getting user profile for $username: $e');
       return null;
     }
   }
