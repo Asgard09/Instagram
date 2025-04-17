@@ -7,6 +7,7 @@ import '../data/providers/auth_provider.dart';
 import '../data/providers/posts_provider.dart';
 import '../models/post.dart';
 import 'user_profile_screen.dart';
+import '../data/providers/likes_provider.dart';
 
 class HomeScreen extends StatefulWidget {
   const HomeScreen({Key? key}) : super(key: key);
@@ -129,7 +130,7 @@ class _HomeScreenState extends State<HomeScreen> {
   }
 }
 
-class PostItem extends StatelessWidget {
+class PostItem extends StatefulWidget {
   final Post post;
   final String serverBaseUrl;
 
@@ -140,19 +141,86 @@ class PostItem extends StatelessWidget {
   }) : super(key: key);
 
   @override
+  _PostItemState createState() => _PostItemState();
+}
+
+class _PostItemState extends State<PostItem> {
+  bool _isLiked = false;
+  int _likeCount = 0;
+  bool _isLoading = false;
+
+  @override
+  void initState() {
+    super.initState();
+    _fetchLikeData();
+  }
+
+  Future<void> _fetchLikeData() async {
+    final token = Provider.of<AuthProvider>(context, listen: false).token;
+    if (token != null && widget.post.id != null) {
+      int postId = int.parse(widget.post.id.toString());
+      
+      // Get the like status
+      await Provider.of<LikesProvider>(context, listen: false)
+          .fetchLikeStatus(token, postId);
+      
+      // Get the like count
+      await Provider.of<LikesProvider>(context, listen: false)
+          .fetchLikeCount(token, postId);
+      
+      // Update local state
+      setState(() {
+        _isLiked = Provider.of<LikesProvider>(context, listen: false)
+            .isPostLiked(postId);
+        _likeCount = Provider.of<LikesProvider>(context, listen: false)
+            .getLikeCount(postId);
+      });
+    }
+  }
+
+  Future<void> _toggleLike() async {
+    if (_isLoading) return;
+    
+    setState(() {
+      _isLoading = true;
+    });
+    
+    final token = Provider.of<AuthProvider>(context, listen: false).token;
+    if (token != null && widget.post.id != null) {
+      int postId = int.parse(widget.post.id.toString());
+      
+      bool success = await Provider.of<LikesProvider>(context, listen: false)
+          .toggleLike(token, postId);
+      
+      if (success) {
+        setState(() {
+          _isLiked = Provider.of<LikesProvider>(context, listen: false)
+              .isPostLiked(postId);
+          _likeCount = Provider.of<LikesProvider>(context, listen: false)
+              .getLikeCount(postId);
+        });
+      }
+    }
+    
+    setState(() {
+      _isLoading = false;
+    });
+  }
+
+  @override
   Widget build(BuildContext context) {
     // Debug post data
-    print('Building PostItem with post ID: ${post.id}');
-    print('Post username: ${post.username}');
-    print('Post userId: ${post.userId}');
+    print('Building PostItem with post ID: ${widget.post.id}');
+    print('Post username: ${widget.post.username}');
+    print('Post userId: ${widget.post.userId}');
     
     // Determine username to display
     String displayName = "Instagram User";
-    if (post.username != null && post.username!.isNotEmpty) {
-      displayName = post.username!;
+    if (widget.post.username != null && widget.post.username!.isNotEmpty) {
+      displayName = widget.post.username!;
       print('Using post.username: $displayName');
-    } else if (post.userId != null) {
-      displayName = 'User ${post.userId}';
+    } else if (widget.post.userId != null) {
+      displayName = 'User ${widget.post.userId}';
       print('Using post.userId: $displayName');
     }
     
@@ -174,13 +242,13 @@ class PostItem extends StatelessWidget {
                 SizedBox(width: 8),
                 GestureDetector(
                   onTap: () {
-                    if (post.username != null && post.username!.isNotEmpty) {
-                      print('Navigating to profile of user: ${post.username}');
+                    if (widget.post.username != null && widget.post.username!.isNotEmpty) {
+                      print('Navigating to profile of user: ${widget.post.username}');
                       Navigator.push(
                         context,
                         MaterialPageRoute(
                           builder: (context) => UserProfileScreen(
-                            username: post.username!,
+                            username: widget.post.username!,
                           ),
                         ),
                       );
@@ -204,7 +272,7 @@ class PostItem extends StatelessWidget {
           ),
           
           // Post image - handle both URL and Base64
-          _buildPostImage(post),
+          _buildPostImage(),
             
           // Post actions
           Padding(
@@ -212,9 +280,29 @@ class PostItem extends StatelessWidget {
             child: Row(
               children: [
                 IconButton(
-                  icon: Icon(Icons.favorite_border, color: Colors.white),
-                  onPressed: () {},
+                  icon: _isLoading
+                      ? SizedBox(
+                          width: 18,
+                          height: 18,
+                          child: CircularProgressIndicator(
+                            strokeWidth: 2,
+                            color: Colors.white,
+                          ),
+                        )
+                      : Icon(
+                          _isLiked ? Icons.favorite : Icons.favorite_border,
+                          color: _isLiked ? Colors.red : Colors.white,
+                        ),
+                  onPressed: _toggleLike,
                 ),
+                if (_likeCount > 0)
+                  Padding(
+                    padding: const EdgeInsets.only(left: 4.0),
+                    child: Text(
+                      '$_likeCount',
+                      style: TextStyle(color: Colors.white, fontSize: 14),
+                    ),
+                  ),
                 IconButton(
                   icon: Icon(Icons.chat_bubble_outline, color: Colors.white),
                   onPressed: () {},
@@ -233,21 +321,21 @@ class PostItem extends StatelessWidget {
           ),
           
           // Caption
-          if (post.caption.isNotEmpty)
+          if (widget.post.caption.isNotEmpty)
             Padding(
               padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 4.0),
               child: Text(
-                post.caption,
+                widget.post.caption,
                 style: TextStyle(color: Colors.white),
               ),
             ),
             
           // Date
-          if (post.createdAt != null)
+          if (widget.post.createdAt != null)
             Padding(
               padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 4.0),
               child: Text(
-                '${post.createdAt!.day}/${post.createdAt!.month}/${post.createdAt!.year}',
+                '${widget.post.createdAt!.day}/${widget.post.createdAt!.month}/${widget.post.createdAt!.year}',
                 style: TextStyle(color: Colors.grey, fontSize: 12),
               ),
             ),
@@ -256,7 +344,8 @@ class PostItem extends StatelessWidget {
     );
   }
   
-  Widget _buildPostImage(Post post) {
+  Widget _buildPostImage() {
+    Post post = widget.post;
     // First check if we have URLs
     if (post.imageUrls != null && post.imageUrls!.isNotEmpty) {
       String imageUrl = post.imageUrls!.first;
@@ -282,7 +371,7 @@ class PostItem extends StatelessWidget {
       
       // Add base URL if the image URL is a relative path
       if (!imageUrl.startsWith('http')) {
-        imageUrl = '$serverBaseUrl/uploads/$imageUrl';
+        imageUrl = '${widget.serverBaseUrl}/uploads/$imageUrl';
       }
       
       print('Loading image from URL: $imageUrl');

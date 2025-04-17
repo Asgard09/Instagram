@@ -7,6 +7,7 @@ import 'package:provider/provider.dart';
 import 'data/providers/auth_provider.dart';
 import 'data/providers/posts_provider.dart';
 import 'data/providers/user_provider.dart';
+import 'data/providers/likes_provider.dart';
 import 'instagram/main_screen.dart';
 
 // Import mobile implementation only on non-web platforms
@@ -17,9 +18,10 @@ void main() {
   runApp(
     MultiProvider(
       providers: [
-        ChangeNotifierProvider(create: (_) => AuthProvider()),
-        ChangeNotifierProvider(create: (_) => PostsProvider()),
-        ChangeNotifierProvider(create: (_) => UserProvider()),
+        ChangeNotifierProvider(create: (context) => AuthProvider()),
+        ChangeNotifierProvider(create: (context) => UserProvider()),
+        ChangeNotifierProvider(create: (context) => PostsProvider()),
+        ChangeNotifierProvider(create: (context) => LikesProvider()),
       ],
       child: MyApp(),
     ),
