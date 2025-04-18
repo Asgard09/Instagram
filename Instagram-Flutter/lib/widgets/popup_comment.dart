@@ -56,7 +56,7 @@ class _CommentsBottomSheetState extends State<CommentsBottomSheet> {
     try {
       final token = Provider.of<AuthProvider>(context, listen: false).token;
       final response = await http.get(
-        Uri.parse('http://192.168.1.5:8080/api/comments/post/${widget.postId}'),
+        Uri.parse('http://192.168.1.4:8080/api/comments/post/${widget.postId}'),
         headers: {
           'Authorization': 'Bearer $token',
           'Content-Type': 'application/json',
@@ -104,7 +104,7 @@ class _CommentsBottomSheetState extends State<CommentsBottomSheet> {
           : _commentController.text.trim();
 
       final response = await http.post(
-        Uri.parse('http://192.168.1.5:8080/api/comments/post/${widget.postId}'),
+        Uri.parse('http://192.168.1.4:8080/api/comments/post/${widget.postId}'),
         headers: {
           'Authorization': 'Bearer $token',
           'Content-Type': 'application/json',

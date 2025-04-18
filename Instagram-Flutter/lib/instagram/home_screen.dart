@@ -22,10 +22,10 @@ class _HomeScreenState extends State<HomeScreen> {
   String get serverBaseUrl {
     if (kIsWeb) {
       // Use the specific IP for web
-      return 'http://192.168.1.5:8080';
+      return 'http://192.168.1.4:8080';
     } else {
       // For mobile platforms
-      return 'http://192.168.1.5:8080';
+      return 'http://192.168.1.4:8080';
     }
   }
 
@@ -256,14 +256,22 @@ class _PostItemState extends State<PostItem> {
                 SizedBox(width: 8),
                 GestureDetector(
                   onTap: () {
-                    if (widget.post.username != null && widget.post.username!.isNotEmpty) {
-                      print('Navigating to profile of user: ${widget.post.username}');
+                    if (widget.post.userId != null) {
+                      print('Navigating to profile of user: ${widget.post.username} with ID: ${widget.post.userId}');
                       Navigator.push(
                         context,
                         MaterialPageRoute(
                           builder: (context) => UserProfileScreen(
-                            username: widget.post.username!,
+                            userId: widget.post.userId.toString(),
+                            initialUsername: widget.post.username,
                           ),
+                        ),
+                      );
+                    } else {
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        SnackBar(
+                          content: Text('Cannot view profile: User ID not available'),
+                          backgroundColor: Colors.red,
                         ),
                       );
                     }

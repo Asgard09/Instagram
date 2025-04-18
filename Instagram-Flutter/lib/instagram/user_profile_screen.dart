@@ -46,7 +46,7 @@ class _UserProfileScreenState extends State<UserProfileScreen> {
     try {
       final token = Provider.of<AuthProvider>(context, listen: false).token;
       final response = await http.get(
-        Uri.parse('http://192.168.1.5:8080/api/users/${widget.userId}'),
+        Uri.parse('http://192.168.1.4:8080/api/users/${widget.userId}'),
         headers: {
           'Authorization': 'Bearer $token',
           'Content-Type': 'application/json',
@@ -84,7 +84,7 @@ class _UserProfileScreenState extends State<UserProfileScreen> {
     try {
       final token = Provider.of<AuthProvider>(context, listen: false).token;
       final response = await http.post(
-        Uri.parse('http://192.168.1.5:8080/api/follows/${widget.userId}'),
+        Uri.parse('http://192.168.1.4:8080/api/follows/${widget.userId}'),
         headers: {
           'Authorization': 'Bearer $token',
           'Content-Type': 'application/json',
@@ -122,8 +122,8 @@ class _UserProfileScreenState extends State<UserProfileScreen> {
       String imageUrl = profilePicture;
       if (!imageUrl.startsWith('http')) {
         String serverUrl = kIsWeb 
-            ? 'http://192.168.1.5:8080'
-            : 'http://192.168.1.5:8080';
+            ? 'http://192.168.1.4:8080'
+            : 'http://192.168.1.4:8080';
         imageUrl = '$serverUrl/uploads/$imageUrl';
       }
 
