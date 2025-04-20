@@ -5,7 +5,7 @@ import 'package:http/http.dart' as http;
 import '../models/user.dart';
 
 class UserService {
-  final String baseUrl = 'http://192.168.1.4:8080/api';
+  final String baseUrl = 'http://192.168.1.97:8080/api';
 
   // Get the current user's profile
   Future<User?> getCurrentUser(String token) async {

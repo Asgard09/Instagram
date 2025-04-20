@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:http/http.dart' as http;
 import 'dart:convert';
 import 'dart:math';
 import 'package:provider/provider.dart';
@@ -22,10 +23,10 @@ class _HomeScreenState extends State<HomeScreen> {
   String get serverBaseUrl {
     if (kIsWeb) {
       // Use the specific IP for web
-      return 'http://192.168.1.4:8080';
+      return 'http://192.168.1.97:8080';
     } else {
       // For mobile platforms
-      return 'http://192.168.1.4:8080';
+      return 'http://192.168.1.97:8080';
     }
   }
 
@@ -248,21 +249,31 @@ class _PostItemState extends State<PostItem> {
             padding: const EdgeInsets.all(8.0),
             child: Row(
               children: [
-                CircleAvatar(
-                  radius: 16,
-                  backgroundColor: Colors.grey,
-                  child: Icon(Icons.person, color: Colors.white, size: 18),
-                ),
+                _buildUserAvatar(),
                 SizedBox(width: 8),
                 GestureDetector(
                   onTap: () {
                     if (widget.post.userId != null) {
-                      print('Navigating to profile of user: ${widget.post.username} with ID: ${widget.post.userId}');
+                      final userId = widget.post.userId.toString();
+                      print('Navigating to profile from username tap - userId: $userId, username: ${widget.post.username}');
+                      
                       Navigator.push(
                         context,
                         MaterialPageRoute(
                           builder: (context) => UserProfileScreen(
-                            userId: widget.post.userId.toString(),
+                            userId: userId,
+                            initialUsername: widget.post.username,
+                          ),
+                        ),
+                      );
+                    } else if (widget.post.username != null && widget.post.username!.isNotEmpty) {
+                      // If no userId but we have username, try to navigate with just the username
+                      print('No userId available, trying to navigate with just username: ${widget.post.username}');
+                      Navigator.push(
+                        context,
+                        MaterialPageRoute(
+                          builder: (context) => UserProfileScreen(
+                            userId: "0", // Use a placeholder
                             initialUsername: widget.post.username,
                           ),
                         ),
@@ -504,5 +515,219 @@ class _PostItemState extends State<PostItem> {
         ),
       );
     }
+  }
+  Widget _buildUserAvatar() {
+    // Debug - print userId directly to check its value
+    print('Building avatar for post with userId: ${widget.post.userId}, username: ${widget.post.username}');
+    
+    // If we have a username, try to fetch user info for profile picture
+    if (widget.post.username != null && widget.post.username!.isNotEmpty) {
+      final String apiUrl = '${widget.serverBaseUrl}/api/users/by-username/${widget.post.username}';
+      final token = Provider.of<AuthProvider>(context, listen: false).token;
+
+      return GestureDetector(
+        onTap: () {
+          // Check and convert userId to ensure it's a proper value
+          if (widget.post.userId != null) {
+            var userId = widget.post.userId.toString();
+            print('Navigating to profile from avatar - userId: $userId, username: ${widget.post.username}');
+            
+            // Debug - print what gets passed to the UserProfileScreen
+            Navigator.push(
+              context,
+              MaterialPageRoute(
+                builder: (context) => UserProfileScreen(
+                  userId: userId,
+                  initialUsername: widget.post.username,
+                ),
+              ),
+            );
+          } else {
+            print('Cannot navigate to profile: userId is null');
+            // Try to navigate with just the username if available
+            if (widget.post.username != null && widget.post.username!.isNotEmpty) {
+              print('Attempting to navigate with just username: ${widget.post.username}');
+              Navigator.push(
+                context,
+                MaterialPageRoute(
+                  builder: (context) => UserProfileScreen(
+                    userId: "0", // Use a placeholder
+                    initialUsername: widget.post.username,
+                  ),
+                ),
+              );
+            } else {
+              ScaffoldMessenger.of(context).showSnackBar(
+                SnackBar(
+                  content: Text('Cannot view profile: User information not available'),
+                  backgroundColor: Colors.red,
+                ),
+              );
+            }
+          }
+        },
+        child: FutureBuilder<http.Response>(
+          future: http.get(
+            Uri.parse(apiUrl),
+            headers: {
+              'Authorization': 'Bearer $token',
+              'Content-Type': 'application/json',
+            },
+          ),
+          builder: (context, snapshot) {
+            // If we successfully got user data
+            if (snapshot.connectionState == ConnectionState.done &&
+                snapshot.data != null &&
+                snapshot.data!.statusCode == 200) {
+
+              try {
+                final userData = jsonDecode(snapshot.data!.body);
+                final profilePicture = userData['profilePicture'];
+                final userId = userData['userId']; // Extract userId from the API response
+                
+                print('User API response success - userId from API: $userId, username: ${widget.post.username}');
+
+                // Store profile picture for navigation
+                String? profilePictureToPass = profilePicture;
+
+                // If user has a profile picture
+                if (profilePicture != null && profilePicture.isNotEmpty) {
+                  // Handle base64 image
+                  if (profilePicture.contains(';base64,') || profilePicture.contains(',')) {
+                    try {
+                      String base64String = profilePicture;
+
+                      // Extract the actual base64 string
+                      if (base64String.contains(';base64,')) {
+                        base64String = base64String.split(';base64,').last;
+                      } else if (base64String.contains(',')) {
+                        base64String = base64String.split(',').last;
+                      }
+
+                      base64String = base64String.trim();
+                      final imageBytes = base64Decode(base64String);
+
+                      return GestureDetector(
+                        onTap: () {
+                          // Use the userId from the API response if available, otherwise fallback to the post's userId
+                          final userIdToUse = userId != null ? userId.toString() : (widget.post.userId != null ? widget.post.userId.toString() : "0");
+                          print('Navigating to profile from base64 avatar - userId: $userIdToUse');
+                          
+                          Navigator.push(
+                            context,
+                            MaterialPageRoute(
+                              builder: (context) => UserProfileScreen(
+                                userId: userIdToUse,
+                                initialUsername: widget.post.username,
+                                initialProfilePicture: profilePictureToPass,
+                              ),
+                            ),
+                          );
+                        },
+                        child: CircleAvatar(
+                          radius: 16,
+                          backgroundImage: MemoryImage(imageBytes),
+                          backgroundColor: Colors.grey,
+                        ),
+                      );
+                    } catch (e) {
+                      print('Error decoding base64 image: $e');
+                    }
+                  }
+                  // Handle URL image
+                  else {
+                    String imageUrl = profilePicture;
+                    if (!imageUrl.startsWith('http')) {
+                      imageUrl = '${widget.serverBaseUrl}/uploads/$imageUrl';
+                    }
+
+                    return GestureDetector(
+                      onTap: () {
+                        // Use the userId from the API response if available, otherwise fallback to the post's userId
+                        final userIdToUse = userId != null ? userId.toString() : (widget.post.userId != null ? widget.post.userId.toString() : "0");
+                        print('Navigating to profile from URL avatar - userId: $userIdToUse');
+                        
+                        Navigator.push(
+                          context,
+                          MaterialPageRoute(
+                            builder: (context) => UserProfileScreen(
+                              userId: userIdToUse,
+                              initialUsername: widget.post.username,
+                              initialProfilePicture: profilePictureToPass,
+                            ),
+                          ),
+                        );
+                      },
+                      child: CircleAvatar(
+                        radius: 16,
+                        backgroundImage: NetworkImage(imageUrl),
+                        backgroundColor: Colors.grey,
+                      ),
+                    );
+                  }
+                }
+              } catch (e) {
+                print('Error parsing user data: $e');
+              }
+            } else if (snapshot.connectionState == ConnectionState.done) {
+              print('User API request failed: ${snapshot.data?.statusCode ?? "No data"}');
+            }
+
+            // Default avatar when no username is available
+            return GestureDetector(
+              onTap: () {
+                if (widget.post.userId != null) {
+                  final userId = widget.post.userId.toString();
+                  print('Navigating to profile from default avatar - userId: $userId');
+                  
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                      builder: (context) => UserProfileScreen(
+                        userId: userId,
+                        initialUsername: widget.post.username,
+                      ),
+                    ),
+                  );
+                } else {
+                  print('Cannot navigate: userId is null');
+                }
+              },
+              child: CircleAvatar(
+                radius: 16,
+                backgroundColor: Colors.grey,
+                child: Icon(Icons.person, color: Colors.white, size: 18),
+              ),
+            );
+          },
+        ),
+      );
+    }
+
+    // Default avatar when no username is available
+    return GestureDetector(
+      onTap: () {
+        if (widget.post.userId != null) {
+          final userId = widget.post.userId.toString();
+          print('Navigating to profile from default avatar (no username) - userId: $userId');
+          
+          Navigator.push(
+            context,
+            MaterialPageRoute(
+              builder: (context) => UserProfileScreen(
+                userId: userId,
+              ),
+            ),
+          );
+        } else {
+          print('Cannot navigate: no userId and no username available');
+        }
+      },
+      child: CircleAvatar(
+        radius: 16,
+        backgroundColor: Colors.grey,
+        child: Icon(Icons.person, color: Colors.white, size: 18),
+      ),
+    );
   }
 }

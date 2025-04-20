@@ -138,8 +138,8 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
       // Add server base URL if the path is relative
       if (!imageUrl.startsWith('http')) {
         String serverUrl = kIsWeb 
-            ? 'http://192.168.1.4:8080'
-            : 'http://192.168.1.4:8080';
+            ? 'http://192.168.1.97:8080'
+            : 'http://192.168.1.97:8080';
         imageUrl = '$serverUrl/uploads/$imageUrl';
       }
       

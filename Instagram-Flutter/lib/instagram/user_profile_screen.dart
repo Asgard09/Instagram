@@ -32,6 +32,17 @@ class _UserProfileScreenState extends State<UserProfileScreen> {
   int followingCount = 0;
   int postsCount = 0;
 
+  // Helper method to get the base URL for server resources
+  String get serverBaseUrl {
+    if (kIsWeb) {
+      // Use the specific IP for web
+      return 'http://192.168.1.97:8080';
+    } else {
+      // For mobile platforms
+      return 'http://192.168.1.97:8080';
+    }
+  }
+
   @override
   void initState() {
     super.initState();
@@ -45,16 +56,63 @@ class _UserProfileScreenState extends State<UserProfileScreen> {
 
     try {
       final token = Provider.of<AuthProvider>(context, listen: false).token;
-      final response = await http.get(
-        Uri.parse('http://192.168.1.4:8080/api/users/${widget.userId}'),
+      if (token == null) {
+        print('Token is null, cannot load user profile');
+        _showError('Authentication token not found');
+        setState(() {
+          isLoading = false;
+        });
+        return;
+      }
+
+      print('Fetching user profile for userId: ${widget.userId}, username: ${widget.initialUsername}');
+
+      // Try to get user by ID first
+      var responseById = await http.get(
+        Uri.parse('${serverBaseUrl}/api/users/${widget.userId}'),
         headers: {
           'Authorization': 'Bearer $token',
           'Content-Type': 'application/json',
         },
       );
 
-      if (response.statusCode == 200) {
-        final data = json.decode(response.body);
+      print('User profile API response by ID (${widget.userId}) status: ${responseById.statusCode}');
+      
+      // If failed and we have a username, try by username
+      if (responseById.statusCode != 200 && widget.initialUsername != null) {
+        print('Failed to get user by ID, trying by username: ${widget.initialUsername}');
+        
+        var responseByUsername = await http.get(
+          Uri.parse('${serverBaseUrl}/api/users/by-username/${widget.initialUsername}'),
+          headers: {
+            'Authorization': 'Bearer $token',
+            'Content-Type': 'application/json',
+          },
+        );
+        
+        print('User profile API response by username status: ${responseByUsername.statusCode}');
+        
+        if (responseByUsername.statusCode == 200) {
+          print('Successfully fetched user by username: ${responseByUsername.body}');
+          final data = json.decode(responseByUsername.body);
+          setState(() {
+            userData = User.fromJson(data);
+            isFollowing = data['isFollowing'] ?? false;
+            followersCount = data['followersCount'] ?? 0;
+            followingCount = data['followingCount'] ?? 0;
+            postsCount = data['postsCount'] ?? 0;
+          });
+          print('Successfully parsed user data from username API: ${userData?.username}, ${userData?.name}');
+          return;
+        } else {
+          print('Also failed to fetch by username: ${responseByUsername.statusCode}');
+        }
+      }
+      
+      // Process the response from the ID endpoint if it was successful
+      if (responseById.statusCode == 200) {
+        print('User profile API response body: ${responseById.body}');
+        final data = json.decode(responseById.body);
         setState(() {
           userData = User.fromJson(data);
           isFollowing = data['isFollowing'] ?? false;
@@ -62,10 +120,21 @@ class _UserProfileScreenState extends State<UserProfileScreen> {
           followingCount = data['followingCount'] ?? 0;
           postsCount = data['postsCount'] ?? 0;
         });
+        print('Successfully parsed user data: ${userData?.username}, ${userData?.name}');
+      } else if (responseById.statusCode == 404) {
+        print('User not found: ${widget.userId}');
+        setState(() {
+          // Set a placeholder user with the initialUsername
+          if (widget.initialUsername != null) {
+            userData = User(username: widget.initialUsername!);
+          }
+        });
       } else {
-        _showError('Failed to load user profile');
+        print('Failed to load user profile: ${responseById.statusCode}, ${responseById.body}');
+        _showError('Failed to load user profile: ${responseById.statusCode}');
       }
     } catch (e) {
+      print('Error loading profile: $e');
       _showError('Error loading profile: $e');
     } finally {
       setState(() {
@@ -84,7 +153,7 @@ class _UserProfileScreenState extends State<UserProfileScreen> {
     try {
       final token = Provider.of<AuthProvider>(context, listen: false).token;
       final response = await http.post(
-        Uri.parse('http://192.168.1.4:8080/api/follows/${widget.userId}'),
+        Uri.parse('${serverBaseUrl}/api/follows/${widget.userId}'),
         headers: {
           'Authorization': 'Bearer $token',
           'Content-Type': 'application/json',
@@ -109,10 +178,21 @@ class _UserProfileScreenState extends State<UserProfileScreen> {
   }
 
   void _showError(String message) {
+    // Only show error if mounted
+    if (!mounted) return;
+    
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
         content: Text(message),
         backgroundColor: Colors.red,
+        duration: const Duration(seconds: 3),
+        action: SnackBarAction(
+          label: 'Retry',
+          textColor: Colors.white,
+          onPressed: () {
+            _loadUserData();
+          },
+        ),
       ),
     );
   }
@@ -121,10 +201,7 @@ class _UserProfileScreenState extends State<UserProfileScreen> {
     if (profilePicture != null) {
       String imageUrl = profilePicture;
       if (!imageUrl.startsWith('http')) {
-        String serverUrl = kIsWeb 
-            ? 'http://192.168.1.4:8080'
-            : 'http://192.168.1.4:8080';
-        imageUrl = '$serverUrl/uploads/$imageUrl';
+        imageUrl = '${serverBaseUrl}/uploads/$imageUrl';
       }
 
       return CircleAvatar(
@@ -152,6 +229,11 @@ class _UserProfileScreenState extends State<UserProfileScreen> {
   }
 
   Widget _buildFollowButton() {
+    // Don't show follow button if we couldn't fetch the user
+    if (userData == null) {
+      return const SizedBox.shrink();
+    }
+    
     return SizedBox(
       width: double.infinity,
       child: ElevatedButton(
@@ -204,87 +286,195 @@ class _UserProfileScreenState extends State<UserProfileScreen> {
             )
           : RefreshIndicator(
               onRefresh: _loadUserData,
-              child: SingleChildScrollView(
-                padding: const EdgeInsets.all(16),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Row(
+              child: Stack(
+                children: [
+                  SingleChildScrollView(
+                    padding: const EdgeInsets.all(16),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        _buildProfileImage(
-                          userData?.profilePicture ?? widget.initialProfilePicture,
+                        Row(
+                          children: [
+                            _buildProfileImage(
+                              userData?.profilePicture ?? widget.initialProfilePicture,
+                            ),
+                            const SizedBox(width: 24),
+                            Expanded(
+                              child: Row(
+                                mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                                children: [
+                                  _buildStat(postsCount, 'Posts'),
+                                  _buildStat(followersCount, 'Followers'),
+                                  _buildStat(followingCount, 'Following'),
+                                ],
+                              ),
+                            ),
+                          ],
                         ),
-                        const SizedBox(width: 24),
-                        Expanded(
-                          child: Row(
-                            mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                        const SizedBox(height: 16),
+                        _buildUserInfoSection(),
+                        const SizedBox(height: 16),
+                        _buildFollowButton(),
+                        const SizedBox(height: 24),
+                        const DefaultTabController(
+                          length: 2,
+                          child: Column(
                             children: [
-                              _buildStat(postsCount, 'Posts'),
-                              _buildStat(followersCount, 'Followers'),
-                              _buildStat(followingCount, 'Following'),
+                              TabBar(
+                                tabs: [
+                                  Tab(icon: Icon(Icons.grid_on, color: Colors.white)),
+                                  Tab(icon: Icon(Icons.person_pin_outlined, color: Colors.white)),
+                                ],
+                                indicatorColor: Colors.white,
+                              ),
+                              SizedBox(
+                                height: 400,
+                                child: TabBarView(
+                                  children: [
+                                    Center(
+                                      child: Text(
+                                        'No posts yet',
+                                        style: TextStyle(color: Colors.grey),
+                                      ),
+                                    ),
+                                    Center(
+                                      child: Text(
+                                        'No tagged photos',
+                                        style: TextStyle(color: Colors.grey),
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              ),
                             ],
                           ),
                         ),
                       ],
                     ),
-                    const SizedBox(height: 16),
-                    if (userData?.name != null)
-                      Text(
-                        userData!.name!,
-                        style: const TextStyle(
-                          color: Colors.white,
-                          fontWeight: FontWeight.bold,
-                        ),
+                  ),
+                ],
+              ),
+            ),
+    );
+  }
+
+  Widget _buildUserInfoSection() {
+    return Card(
+      color: Colors.grey[900],
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(10),
+      ),
+      child: Padding(
+        padding: const EdgeInsets.all(12.0),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            // Always show username as backup if name is missing
+            if (userData?.name != null)
+              Padding(
+                padding: const EdgeInsets.only(bottom: 8.0),
+                child: Row(
+                  children: [
+                    Icon(Icons.person, color: Colors.grey[400], size: 18),
+                    SizedBox(width: 8),
+                    Text(
+                      userData!.name!,
+                      style: const TextStyle(
+                        color: Colors.white,
+                        fontWeight: FontWeight.bold,
+                        fontSize: 16,
                       ),
-                    if (userData?.bio != null)
-                      Padding(
-                        padding: const EdgeInsets.only(top: 4),
-                        child: Text(
-                          userData!.bio!,
-                          style: const TextStyle(color: Colors.white),
-                        ),
-                      ),
-                    const SizedBox(height: 16),
-                    _buildFollowButton(),
-                    const SizedBox(height: 24),
-                    const DefaultTabController(
-                      length: 2,
-                      child: Column(
-                        children: [
-                          TabBar(
-                            tabs: [
-                              Tab(icon: Icon(Icons.grid_on, color: Colors.white)),
-                              Tab(icon: Icon(Icons.person_pin_outlined, color: Colors.white)),
-                            ],
-                            indicatorColor: Colors.white,
-                          ),
-                          SizedBox(
-                            height: 400,
-                            child: TabBarView(
-                              children: [
-                                Center(
-                                  child: Text(
-                                    'No posts yet',
-                                    style: TextStyle(color: Colors.grey),
-                                  ),
-                                ),
-                                Center(
-                                  child: Text(
-                                    'No tagged photos',
-                                    style: TextStyle(color: Colors.grey),
-                                  ),
-                                ),
-                              ],
-                            ),
-                          ),
-                        ],
+                    ),
+                  ],
+                ),
+              )
+            else if (userData?.username != null)
+              Padding(
+                padding: const EdgeInsets.only(bottom: 8.0),
+                child: Row(
+                  children: [
+                    Icon(Icons.person, color: Colors.grey[400], size: 18),
+                    SizedBox(width: 8),
+                    Text(
+                      userData!.username,
+                      style: const TextStyle(
+                        color: Colors.white,
+                        fontWeight: FontWeight.bold,
+                        fontSize: 16,
                       ),
                     ),
                   ],
                 ),
               ),
-            ),
+            if (userData?.bio != null)
+              Padding(
+                padding: const EdgeInsets.only(bottom: 8.0),
+                child: Row(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Icon(Icons.info_outline, color: Colors.grey[400], size: 18),
+                    SizedBox(width: 8),
+                    Expanded(
+                      child: Text(
+                        userData!.bio!,
+                        style: TextStyle(color: Colors.white, fontSize: 14),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            if (userData?.gender != null)
+              Row(
+                children: [
+                  Icon(Icons.transgender, color: Colors.grey[400], size: 18),
+                  SizedBox(width: 8),
+                  Text(
+                    _formatGender(userData!.gender!),
+                    style: TextStyle(color: Colors.white, fontSize: 14),
+                  ),
+                ],
+              ),
+            // If no user data is available
+            if (userData == null || (userData?.name == null && userData?.bio == null && userData?.gender == null))
+              Padding(
+                padding: const EdgeInsets.symmetric(vertical: 12.0),
+                child: Center(
+                  child: Column(
+                    children: [
+                      Icon(Icons.person_off, color: Colors.grey[400], size: 36),
+                      SizedBox(height: 8),
+                      Text(
+                        'No profile information available',
+                        style: TextStyle(color: Colors.grey[400], fontSize: 14),
+                      ),
+                      SizedBox(height: 4),
+                      Text(
+                        'This user may not exist or profile is private',
+                        style: TextStyle(color: Colors.grey[500], fontSize: 12),
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+          ],
+        ),
+      ),
     );
+  }
+
+  String _formatGender(Gender gender) {
+    switch (gender) {
+      case Gender.MALE:
+        return 'Male';
+      case Gender.FEMALE:
+        return 'Female';
+      case Gender.OTHER:
+        return 'Other';
+      case Gender.PREFER_NOT_TO_SAY:
+        return 'Prefer not to say';
+      default:
+        return 'Not specified';
+    }
   }
 
   Widget _buildStat(int count, String label) {
