@@ -23,10 +23,10 @@ class _HomeScreenState extends State<HomeScreen> {
   String get serverBaseUrl {
     if (kIsWeb) {
       // Use the specific IP for web
-      return 'http://192.168.1.97:8080';
+      return 'http://192.168.1.103:8080';
     } else {
       // For mobile platforms
-      return 'http://192.168.1.97:8080';
+      return 'http://192.168.1.103:8080';
     }
   }
 
