@@ -1,6 +1,7 @@
 package com.instagram.server.service;
 
 import com.instagram.server.entity.User;
+import com.instagram.server.entity.Token;
 import com.instagram.server.repository.TokenRepository;
 import io.jsonwebtoken.Claims;
 import io.jsonwebtoken.Jwts;
@@ -11,6 +12,7 @@ import org.springframework.stereotype.Service;
 
 import javax.crypto.SecretKey;
 import java.util.Date;
+import java.util.List;
 import java.util.function.Function;
 
 @Service
@@ -19,7 +21,7 @@ public class JwtService {
 
     private long accessTokenExpire = 86400000;
 
-    private long refreshTokenExpire = 604800000;
+    private final long refreshTokenExpire = 604800000;
 
     private final TokenRepository tokenRepository;
 
@@ -33,7 +35,12 @@ public class JwtService {
 
     public boolean isValid(String token, UserDetails user) {
         String username = extractUsername(token);
-        return (username.equals(user.getUsername())) && !isTokenExpired(token);
+
+        boolean isValidToken = tokenRepository.findAllByAccessToken(token)
+                .stream()
+                .anyMatch(t -> !t.isLoggedOut());
+
+        return (username.equals(user.getUsername())) && !isTokenExpired(token) && isValidToken;
     }
 
     private boolean isTokenExpired(String token) {

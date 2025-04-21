@@ -12,6 +12,7 @@ import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 
 import java.util.Date;
+import java.util.List;
 
 @Service
 public class AuthenticationService {
@@ -66,13 +67,29 @@ public class AuthenticationService {
                     .orElseThrow(() -> new RuntimeException("User not found"));
             
             String accessToken = jwtService.generateAccessToken(user);
+
+            revokeAllTokenByUser(user);
+
             saveUserToken(accessToken, user);
+
             return new AuthenticationResponse(accessToken);
-            
+
         } catch (org.springframework.security.authentication.BadCredentialsException e) {
             throw new RuntimeException("Invalid username or password");
         } catch (Exception e) {
             throw new RuntimeException("Authentication failed: " + e.getMessage());
         }
+    }
+
+    private void revokeAllTokenByUser(User user) {
+        List<Token> validTokenListByUser = tokenRepository.findAllAccessTokensByUser(user.getUserId());
+
+        if (!validTokenListByUser.isEmpty()){
+            validTokenListByUser.forEach(t->{
+                t.setLoggedOut(true);
+            });
+        }
+
+        tokenRepository.saveAll(validTokenListByUser);
     }
 }

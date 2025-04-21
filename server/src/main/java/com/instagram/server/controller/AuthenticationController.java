@@ -4,10 +4,7 @@ import com.instagram.server.dto.request.AuthRequest;
 import com.instagram.server.dto.response.AuthenticationResponse;
 import com.instagram.server.service.AuthenticationService;
 import org.springframework.http.ResponseEntity;
-import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.RequestBody;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.bind.annotation.*;
 
 @RestController
 @RequestMapping("/auth")
@@ -28,5 +25,10 @@ public class AuthenticationController {
     public ResponseEntity<AuthenticationResponse> login(@RequestBody AuthRequest request) {
         System.out.println("access token :" + authenticationService.authenticate(request).getAccessToken());
         return ResponseEntity.ok(authenticationService.authenticate(request));
+    }
+
+    @GetMapping("/demo")
+    public ResponseEntity<String> demo(){
+        return ResponseEntity.ok("Hello from Server");
     }
 }
