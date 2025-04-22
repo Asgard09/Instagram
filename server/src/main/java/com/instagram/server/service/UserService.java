@@ -120,4 +120,10 @@ public class UserService {
         return userRepository.findByUsername(username)
                 .orElseThrow(() -> new RuntimeException("User not found"));
     }
+    
+    // Get user by ID
+    public User getUserById(Long userId) {
+        return userRepository.findById(Math.toIntExact(userId))
+                .orElseThrow(() -> new RuntimeException("User not found"));
+    }
 } 

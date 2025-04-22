@@ -36,10 +36,10 @@ class _UserProfileScreenState extends State<UserProfileScreen> {
   String get serverBaseUrl {
     if (kIsWeb) {
       // Use the specific IP for web
-      return 'http://192.168.1.103:8080';
+      return 'http://192.168.1.5:8080';
     } else {
       // For mobile platforms
-      return 'http://192.168.1.103:8080';
+      return 'http://192.168.1.5:8080';
     }
   }
 
@@ -78,6 +78,36 @@ class _UserProfileScreenState extends State<UserProfileScreen> {
 
       print('User profile API response by ID (${widget.userId}) status: ${responseById.statusCode}');
       
+      // Check follow status - cần thực hiện đầu tiên để có trạng thái đúng
+      print('Checking follow status for user ${widget.userId}');
+      var isFollowingResponse = await http.get(
+        Uri.parse('${serverBaseUrl}/api/follows/check/${widget.userId}'),
+        headers: {
+          'Authorization': 'Bearer $token',
+          'Content-Type': 'application/json',
+        },
+      );
+      
+      print('Follow status check response: ${isFollowingResponse.statusCode}');
+      if (isFollowingResponse.statusCode == 200) {
+        final followingData = json.decode(isFollowingResponse.body);
+        setState(() {
+          isFollowing = followingData['following'] ?? false;
+        });
+        print('Current follow status: ${isFollowing ? "Following" : "Not following"}');
+      }
+      
+      // Also fetch follow stats
+      var followResponse = await http.get(
+        Uri.parse('${serverBaseUrl}/api/follows/user/${widget.userId}'),
+        headers: {
+          'Authorization': 'Bearer $token',
+          'Content-Type': 'application/json',
+        },
+      );
+      
+      print('Follow data response status: ${followResponse.statusCode}');
+      
       // If failed and we have a username, try by username
       if (responseById.statusCode != 200 && widget.initialUsername != null) {
         print('Failed to get user by ID, trying by username: ${widget.initialUsername}');
@@ -97,11 +127,32 @@ class _UserProfileScreenState extends State<UserProfileScreen> {
           final data = json.decode(responseByUsername.body);
           setState(() {
             userData = User.fromJson(data);
-            isFollowing = data['isFollowing'] ?? false;
-            followersCount = data['followersCount'] ?? 0;
-            followingCount = data['followingCount'] ?? 0;
-            postsCount = data['postsCount'] ?? 0;
           });
+          
+          // Fetch follower counts for this user
+          if (userData?.userId != null) {
+            await _loadFollowStats(userData!.userId.toString(), token);
+            
+            // Nếu đã truy vấn thành công user bằng username, cần kiểm tra lại trạng thái follow
+            if (userData?.userId != null) {
+              var checkFollowResponse = await http.get(
+                Uri.parse('${serverBaseUrl}/api/follows/check/${userData!.userId}'),
+                headers: {
+                  'Authorization': 'Bearer $token',
+                  'Content-Type': 'application/json',
+                },
+              );
+              
+              if (checkFollowResponse.statusCode == 200) {
+                final followData = json.decode(checkFollowResponse.body);
+                setState(() {
+                  isFollowing = followData['following'] ?? false;
+                });
+                print('Updated follow status after username lookup: ${isFollowing ? "Following" : "Not following"}');
+              }
+            }
+          }
+          
           print('Successfully parsed user data from username API: ${userData?.username}, ${userData?.name}');
           return;
         } else {
@@ -115,11 +166,22 @@ class _UserProfileScreenState extends State<UserProfileScreen> {
         final data = json.decode(responseById.body);
         setState(() {
           userData = User.fromJson(data);
-          isFollowing = data['isFollowing'] ?? false;
-          followersCount = data['followersCount'] ?? 0;
-          followingCount = data['followingCount'] ?? 0;
-          postsCount = data['postsCount'] ?? 0;
         });
+
+        // If follow data is available, use it
+        if (followResponse.statusCode == 200) {
+          final followData = json.decode(followResponse.body);
+          setState(() {
+            followersCount = followData['followersCount'] ?? 0;
+            followingCount = followData['followingCount'] ?? 0;
+            postsCount = followData['postsCount'] ?? 0;
+            // Không cập nhật isFollowing từ đây vì chúng ta đã kiểm tra trước đó
+          });
+        } else {
+          // Fallback to individual endpoints
+          await _loadFollowStats(widget.userId, token);
+        }
+        
         print('Successfully parsed user data: ${userData?.username}, ${userData?.name}');
       } else if (responseById.statusCode == 404) {
         print('User not found: ${widget.userId}');
@@ -142,6 +204,60 @@ class _UserProfileScreenState extends State<UserProfileScreen> {
       });
     }
   }
+  
+  Future<void> _loadFollowStats(String userId, String token) async {
+    try {
+      // Get followers count
+      var followersCountResponse = await http.get(
+        Uri.parse('${serverBaseUrl}/api/follows/followers/count/$userId'),
+        headers: {
+          'Authorization': 'Bearer $token',
+          'Content-Type': 'application/json',
+        },
+      );
+      
+      // Get following count
+      var followingCountResponse = await http.get(
+        Uri.parse('${serverBaseUrl}/api/follows/following/count/$userId'),
+        headers: {
+          'Authorization': 'Bearer $token',
+          'Content-Type': 'application/json',
+        },
+      );
+      
+      // Get posts count
+      var postsCountResponse = await http.get(
+        Uri.parse('${serverBaseUrl}/api/follows/posts/count/$userId'),
+        headers: {
+          'Authorization': 'Bearer $token',
+          'Content-Type': 'application/json',
+        },
+      );
+      
+      if (followersCountResponse.statusCode == 200) {
+        final data = json.decode(followersCountResponse.body);
+        setState(() {
+          followersCount = data['count'] ?? 0;
+        });
+      }
+      
+      if (followingCountResponse.statusCode == 200) {
+        final data = json.decode(followingCountResponse.body);
+        setState(() {
+          followingCount = data['count'] ?? 0;
+        });
+      }
+      
+      if (postsCountResponse.statusCode == 200) {
+        final data = json.decode(postsCountResponse.body);
+        setState(() {
+          postsCount = data['count'] ?? 0;
+        });
+      }
+    } catch (e) {
+      print('Error loading follow stats: $e');
+    }
+  }
 
   Future<void> _toggleFollow() async {
     if (isProcessing) return;
@@ -152,6 +268,18 @@ class _UserProfileScreenState extends State<UserProfileScreen> {
 
     try {
       final token = Provider.of<AuthProvider>(context, listen: false).token;
+      
+      // Phản hồi UI ngay lập tức trước khi gọi API
+      final previousFollowState = isFollowing;
+      final previousFollowersCount = followersCount;
+      
+      setState(() {
+        // Optimistic update - cập nhật UI trước khi API hoàn thành
+        isFollowing = !isFollowing;
+        followersCount = isFollowing ? followersCount + 1 : followersCount - 1;
+      });
+
+      // Gọi API follow/unfollow
       final response = await http.post(
         Uri.parse('${serverBaseUrl}/api/follows/${widget.userId}'),
         headers: {
@@ -161,14 +289,31 @@ class _UserProfileScreenState extends State<UserProfileScreen> {
       );
 
       if (response.statusCode == 200) {
+        final data = json.decode(response.body);
         setState(() {
-          isFollowing = !isFollowing;
-          followersCount += isFollowing ? 1 : -1;
+          // Cập nhật theo kết quả thực tế từ server
+          isFollowing = data['status'] == 'followed';
+          
+          // Update follower count
+          if (data.containsKey('followersCount')) {
+            followersCount = data['followersCount'];
+          }
         });
+        
+        print('Follow status updated: ${isFollowing ? "Now following" : "Unfollowed"}');
+        print('New followers count: $followersCount');
       } else {
-        _showError('Failed to ${isFollowing ? 'unfollow' : 'follow'} user');
+        // Khôi phục trạng thái ban đầu nếu API gọi thất bại
+        setState(() {
+          isFollowing = previousFollowState;
+          followersCount = previousFollowersCount;
+        });
+        
+        _showError('Failed to ${isFollowing ? 'unfollow' : 'follow'} user (${response.statusCode})');
+        print('API error: ${response.body}');
       }
     } catch (e) {
+      print('Exception during follow toggle: $e');
       _showError('Error: $e');
     } finally {
       setState(() {
@@ -234,32 +379,57 @@ class _UserProfileScreenState extends State<UserProfileScreen> {
       return const SizedBox.shrink();
     }
     
+    // Kiểm tra xem có phải user hiện tại không
+    final userProvider = Provider.of<UserProvider>(context, listen: false);
+    final currentUser = userProvider.user;
+    
+    // Nếu đang xem chính profile của mình, không hiển thị nút Follow
+    if (currentUser != null && userData?.userId != null && 
+        currentUser.userId.toString() == userData!.userId.toString()) {
+      return const SizedBox.shrink();
+    }
+    
     return SizedBox(
       width: double.infinity,
-      child: ElevatedButton(
-        onPressed: isProcessing ? null : _toggleFollow,
-        style: ElevatedButton.styleFrom(
-          backgroundColor: isFollowing ? Colors.grey[800] : Colors.blue,
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(8),
+      child: AnimatedContainer(
+        duration: Duration(milliseconds: 300),
+        child: ElevatedButton(
+          onPressed: isProcessing ? null : _toggleFollow,
+          style: ElevatedButton.styleFrom(
+            backgroundColor: isFollowing ? Colors.grey[800] : Colors.blue,
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(8),
+            ),
+            padding: EdgeInsets.symmetric(vertical: 12),
           ),
+          child: isProcessing
+              ? const SizedBox(
+                  height: 20,
+                  width: 20,
+                  child: CircularProgressIndicator(
+                    strokeWidth: 2,
+                    valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
+                  ),
+                )
+              : Row(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    Icon(
+                      isFollowing ? Icons.how_to_reg : Icons.person_add,
+                      color: Colors.white,
+                      size: 18,
+                    ),
+                    SizedBox(width: 8),
+                    Text(
+                      isFollowing ? 'Following' : 'Follow',
+                      style: const TextStyle(
+                        color: Colors.white,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                  ],
+                ),
         ),
-        child: isProcessing
-            ? const SizedBox(
-                height: 20,
-                width: 20,
-                child: CircularProgressIndicator(
-                  strokeWidth: 2,
-                  valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
-                ),
-              )
-            : Text(
-                isFollowing ? 'Following' : 'Follow',
-                style: const TextStyle(
-                  color: Colors.white,
-                  fontWeight: FontWeight.bold,
-                ),
-              ),
       ),
     );
   }

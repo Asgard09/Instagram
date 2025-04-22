@@ -2,12 +2,16 @@ package com.instagram.server.entity;
 
 import jakarta.persistence.*;
 import lombok.Data;
+import lombok.EqualsAndHashCode;
+import lombok.NoArgsConstructor;
 
+import java.io.Serializable;
 import java.time.LocalDateTime;
 
 @Entity
 @Data
 @Table(name = "follows")
+@IdClass(Follow.FollowId.class)
 public class Follow {
     @Id
     @ManyToOne
@@ -27,5 +31,18 @@ public class Follow {
     public Follow(User follower, User followee) {
         this.follower = follower;
         this.followee = followee;
+    }
+
+    @Data
+    @NoArgsConstructor
+    @EqualsAndHashCode
+    public static class FollowId implements Serializable {
+        private Long follower;
+        private Long followee;
+        
+        public FollowId(Long follower, Long followee) {
+            this.follower = follower;
+            this.followee = followee;
+        }
     }
 }

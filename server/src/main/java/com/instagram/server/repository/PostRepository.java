@@ -11,4 +11,7 @@ import java.util.List;
 public interface PostRepository extends JpaRepository<Post, Long> {
     List<Post> findByUserOrderByCreatedAtDesc(User user);
     List<Post> findAllByOrderByCreatedAtDesc();
+    
+    // Count posts by user
+    int countByUser(User user);
 }

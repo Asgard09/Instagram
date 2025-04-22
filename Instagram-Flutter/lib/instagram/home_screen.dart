@@ -23,10 +23,10 @@ class _HomeScreenState extends State<HomeScreen> {
   String get serverBaseUrl {
     if (kIsWeb) {
       // Use the specific IP for web
-      return 'http://192.168.1.103:8080';
+      return 'http://192.168.1.5:8080';
     } else {
       // For mobile platforms
-      return 'http://192.168.1.103:8080';
+      return 'http://192.168.1.5:8080';
     }
   }
 
@@ -106,7 +106,7 @@ class _HomeScreenState extends State<HomeScreen> {
             }
 
             final posts = postsProvider.posts;
-            
+
             if (posts.isEmpty) {
               return Center(
                 child: Text(
@@ -174,15 +174,15 @@ class _PostItemState extends State<PostItem> {
     final token = Provider.of<AuthProvider>(context, listen: false).token;
     if (token != null && widget.post.id != null) {
       int postId = int.parse(widget.post.id.toString());
-      
+
       // Get the like status
       await Provider.of<LikesProvider>(context, listen: false)
           .fetchLikeStatus(token, postId);
-      
+
       // Get the like count
       await Provider.of<LikesProvider>(context, listen: false)
           .fetchLikeCount(token, postId);
-      
+
       // Update local state
       setState(() {
         _isLiked = Provider.of<LikesProvider>(context, listen: false)
@@ -195,18 +195,18 @@ class _PostItemState extends State<PostItem> {
 
   Future<void> _toggleLike() async {
     if (_isLoading) return;
-    
+
     setState(() {
       _isLoading = true;
     });
-    
+
     final token = Provider.of<AuthProvider>(context, listen: false).token;
     if (token != null && widget.post.id != null) {
       int postId = int.parse(widget.post.id.toString());
-      
+
       bool success = await Provider.of<LikesProvider>(context, listen: false)
           .toggleLike(token, postId);
-      
+
       if (success) {
         setState(() {
           _isLiked = Provider.of<LikesProvider>(context, listen: false)
@@ -216,7 +216,7 @@ class _PostItemState extends State<PostItem> {
         });
       }
     }
-    
+
     setState(() {
       _isLoading = false;
     });
@@ -228,7 +228,7 @@ class _PostItemState extends State<PostItem> {
     print('Building PostItem with post ID: ${widget.post.id}');
     print('Post username: ${widget.post.username}');
     print('Post userId: ${widget.post.userId}');
-    
+
     // Determine username to display
     String displayName = "Instagram User";
     if (widget.post.username != null && widget.post.username!.isNotEmpty) {
@@ -238,7 +238,7 @@ class _PostItemState extends State<PostItem> {
       displayName = 'User ${widget.post.userId}';
       print('Using post.userId: $displayName');
     }
-    
+
     return Container(
       margin: const EdgeInsets.only(bottom: 10),
       child: Column(
@@ -256,7 +256,7 @@ class _PostItemState extends State<PostItem> {
                     if (widget.post.userId != null) {
                       final userId = widget.post.userId.toString();
                       print('Navigating to profile from username tap - userId: $userId, username: ${widget.post.username}');
-                      
+
                       Navigator.push(
                         context,
                         MaterialPageRoute(
@@ -303,10 +303,10 @@ class _PostItemState extends State<PostItem> {
               ],
             ),
           ),
-          
+
           // Post image - handle both URL and Base64
           _buildPostImage(),
-            
+
           // Post actions
           Padding(
             padding: const EdgeInsets.symmetric(horizontal: 8.0),
@@ -315,17 +315,17 @@ class _PostItemState extends State<PostItem> {
                 IconButton(
                   icon: _isLoading
                       ? SizedBox(
-                          width: 18,
-                          height: 18,
-                          child: CircularProgressIndicator(
-                            strokeWidth: 2,
-                            color: Colors.white,
-                          ),
-                        )
+                    width: 18,
+                    height: 18,
+                    child: CircularProgressIndicator(
+                      strokeWidth: 2,
+                      color: Colors.white,
+                    ),
+                  )
                       : Icon(
-                          _isLiked ? Icons.favorite : Icons.favorite_border,
-                          color: _isLiked ? Colors.red : Colors.white,
-                        ),
+                    _isLiked ? Icons.favorite : Icons.favorite_border,
+                    color: _isLiked ? Colors.red : Colors.white,
+                  ),
                   onPressed: _toggleLike,
                 ),
                 if (_likeCount > 0)
@@ -352,7 +352,7 @@ class _PostItemState extends State<PostItem> {
               ],
             ),
           ),
-          
+
           // Caption
           if (widget.post.caption.isNotEmpty)
             Padding(
@@ -362,7 +362,7 @@ class _PostItemState extends State<PostItem> {
                 style: TextStyle(color: Colors.white),
               ),
             ),
-            
+
           // Date
           if (widget.post.createdAt != null)
             Padding(
@@ -376,13 +376,13 @@ class _PostItemState extends State<PostItem> {
       ),
     );
   }
-  
+
   Widget _buildPostImage() {
     Post post = widget.post;
     // First check if we have URLs
     if (post.imageUrls != null && post.imageUrls!.isNotEmpty) {
       String imageUrl = post.imageUrls!.first;
-      
+
       // Check if this is an error indicator path
       if (imageUrl.contains("ERROR_BASE64_DECODE") || imageUrl.contains("ERROR_")) {
         return Container(
@@ -401,14 +401,14 @@ class _PostItemState extends State<PostItem> {
           ),
         );
       }
-      
+
       // Add base URL if the image URL is a relative path
       if (!imageUrl.startsWith('http')) {
         imageUrl = '${widget.serverBaseUrl}/uploads/$imageUrl';
       }
-      
+
       print('Loading image from URL: $imageUrl');
-      
+
       return Image.network(
         imageUrl,
         height: 300,
@@ -434,7 +434,7 @@ class _PostItemState extends State<PostItem> {
                   Icon(Icons.image_not_supported, color: Colors.white54, size: 40),
                   SizedBox(height: 8),
                   Text('Could not load image', style: TextStyle(color: Colors.white)),
-                  Text(error.toString().length > 50 ? error.toString().substring(0, 50) + '...' : error.toString(), 
+                  Text(error.toString().length > 50 ? error.toString().substring(0, 50) + '...' : error.toString(),
                       style: TextStyle(color: Colors.red, fontSize: 10)),
                 ],
               ),
@@ -443,32 +443,32 @@ class _PostItemState extends State<PostItem> {
         },
       );
     }
-    
+
     // Then check for Base64 image
     else if (post.imageBase64 != null && post.imageBase64!.isNotEmpty) {
       try {
         // Try to decode the base64 string
         String base64String = post.imageBase64!;
-        
+
         // If it has a data:image prefix, remove it
         if (base64String.contains(';base64,')) {
           base64String = base64String.split(';base64,').last;
         } else if (base64String.contains(',')) {
           base64String = base64String.split(',').last;
         }
-        
+
         // Clean base64 string (remove any whitespace)
         base64String = base64String.trim().replaceAll(RegExp(r'\s+'), '');
-        
+
         // Add padding if needed
         while (base64String.length % 4 != 0) {
           base64String += '=';
         }
-        
+
         final imageBytes = base64Decode(base64String);
-        
+
         print('Successfully decoded base64 image of ${imageBytes.length} bytes');
-        
+
         return Image.memory(
           imageBytes,
           height: 300,
@@ -504,7 +504,7 @@ class _PostItemState extends State<PostItem> {
         );
       }
     }
-    
+
     // No image available
     else {
       return Container(
@@ -519,7 +519,7 @@ class _PostItemState extends State<PostItem> {
   Widget _buildUserAvatar() {
     // Debug - print userId directly to check its value
     print('Building avatar for post with userId: ${widget.post.userId}, username: ${widget.post.username}');
-    
+
     // If we have a username, try to fetch user info for profile picture
     if (widget.post.username != null && widget.post.username!.isNotEmpty) {
       final String apiUrl = '${widget.serverBaseUrl}/api/users/by-username/${widget.post.username}';
@@ -531,7 +531,7 @@ class _PostItemState extends State<PostItem> {
           if (widget.post.userId != null) {
             var userId = widget.post.userId.toString();
             print('Navigating to profile from avatar - userId: $userId, username: ${widget.post.username}');
-            
+
             // Debug - print what gets passed to the UserProfileScreen
             Navigator.push(
               context,
@@ -584,7 +584,7 @@ class _PostItemState extends State<PostItem> {
                 final userData = jsonDecode(snapshot.data!.body);
                 final profilePicture = userData['profilePicture'];
                 final userId = userData['userId']; // Extract userId from the API response
-                
+
                 print('User API response success - userId from API: $userId, username: ${widget.post.username}');
 
                 // Store profile picture for navigation
@@ -612,7 +612,7 @@ class _PostItemState extends State<PostItem> {
                           // Use the userId from the API response if available, otherwise fallback to the post's userId
                           final userIdToUse = userId != null ? userId.toString() : (widget.post.userId != null ? widget.post.userId.toString() : "0");
                           print('Navigating to profile from base64 avatar - userId: $userIdToUse');
-                          
+
                           Navigator.push(
                             context,
                             MaterialPageRoute(
@@ -646,7 +646,7 @@ class _PostItemState extends State<PostItem> {
                         // Use the userId from the API response if available, otherwise fallback to the post's userId
                         final userIdToUse = userId != null ? userId.toString() : (widget.post.userId != null ? widget.post.userId.toString() : "0");
                         print('Navigating to profile from URL avatar - userId: $userIdToUse');
-                        
+
                         Navigator.push(
                           context,
                           MaterialPageRoute(
@@ -679,7 +679,7 @@ class _PostItemState extends State<PostItem> {
                 if (widget.post.userId != null) {
                   final userId = widget.post.userId.toString();
                   print('Navigating to profile from default avatar - userId: $userId');
-                  
+
                   Navigator.push(
                     context,
                     MaterialPageRoute(
@@ -710,7 +710,7 @@ class _PostItemState extends State<PostItem> {
         if (widget.post.userId != null) {
           final userId = widget.post.userId.toString();
           print('Navigating to profile from default avatar (no username) - userId: $userId');
-          
+
           Navigator.push(
             context,
             MaterialPageRoute(

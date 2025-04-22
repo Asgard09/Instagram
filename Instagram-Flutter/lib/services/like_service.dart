@@ -2,7 +2,7 @@ import 'dart:convert';
 import 'package:http/http.dart' as http;
 
 class LikeService {
-  final String baseUrl = 'http://192.168.1.103:8080/api';
+  final String baseUrl = 'http://192.168.1.5:8080/api';
 
   // Like a post
   Future<bool> likePost(String token, int postId) async {
