@@ -7,7 +7,7 @@ import 'dart:io';
 // This class is responsible for all post-related API calls
 class PostService {
   // Direct IP address - used for both web and mobile
-  final String baseUrl = 'http://192.168.1.5:8080/api';
+  final String baseUrl = 'http://192.168.1.3:8080/api';
 
   // Method to create post with proper handling for both file paths and blob URLs
   Future<Post?> createPost(String imagePath, String caption, String token) async {

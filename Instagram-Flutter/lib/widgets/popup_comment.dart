@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
 import 'dart:convert';
+import 'dart:typed_data';
 import 'package:provider/provider.dart';
 
 import '../data/providers/auth_provider.dart';
@@ -56,7 +57,7 @@ class _CommentsBottomSheetState extends State<CommentsBottomSheet> {
     try {
       final token = Provider.of<AuthProvider>(context, listen: false).token;
       final response = await http.get(
-        Uri.parse('http://192.168.1.5:8080/api/comments/post/${widget.postId}'),
+        Uri.parse('http://192.168.1.3:8080/api/comments/post/${widget.postId}'),
         headers: {
           'Authorization': 'Bearer $token',
           'Content-Type': 'application/json',
@@ -99,12 +100,12 @@ class _CommentsBottomSheetState extends State<CommentsBottomSheet> {
 
     try {
       final token = Provider.of<AuthProvider>(context, listen: false).token;
-      final String commentText = _replyingTo != null 
+      final String commentText = _replyingTo != null
           ? '@$_replyingTo ${_commentController.text.trim()}'
           : _commentController.text.trim();
 
       final response = await http.post(
-        Uri.parse('http://192.168.1.5:8080/api/comments/post/${widget.postId}'),
+        Uri.parse('http://192.168.1.3:8080/api/comments/post/${widget.postId}'),
         headers: {
           'Authorization': 'Bearer $token',
           'Content-Type': 'application/json',
@@ -165,7 +166,6 @@ class _CommentsBottomSheetState extends State<CommentsBottomSheet> {
           ),
           child: Column(
             children: [
-              // Drag handle with better styling
               Container(
                 width: 40,
                 height: 4,
@@ -175,8 +175,6 @@ class _CommentsBottomSheetState extends State<CommentsBottomSheet> {
                   borderRadius: BorderRadius.circular(4),
                 ),
               ),
-
-              // Header with animation
               Container(
                 padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
                 decoration: BoxDecoration(
@@ -205,46 +203,43 @@ class _CommentsBottomSheetState extends State<CommentsBottomSheet> {
                   ],
                 ),
               ),
-
-              // Comments List with refresh indicator
               Expanded(
                 child: _isLoading
                     ? const Center(
-                        child: CircularProgressIndicator(
-                          valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
-                        ),
-                      )
+                  child: CircularProgressIndicator(
+                    valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
+                  ),
+                )
                     : RefreshIndicator(
-                        onRefresh: _loadComments,
-                        color: Colors.white,
-                        backgroundColor: Colors.blue,
-                        child: _comments.isEmpty
-                            ? const Center(
-                                child: Text(
-                                  'No comments yet\nBe the first to comment!',
-                                  textAlign: TextAlign.center,
-                                  style: TextStyle(
-                                    color: Colors.grey,
-                                    fontSize: 16,
-                                  ),
-                                ),
-                              )
-                            : ListView.builder(
-                                controller: scrollController,
-                                itemCount: _comments.length,
-                                itemBuilder: (context, index) {
-                                  final comment = _comments[index];
-                                  return CommentTile(
-                                    comment: comment,
-                                    index: index,
-                                    onReply: () => _startReply(comment.username),
-                                  );
-                                },
-                              ),
+                  onRefresh: _loadComments,
+                  color: Colors.white,
+                  backgroundColor: Colors.blue,
+                  child: _comments.isEmpty
+                      ? const Center(
+                    child: Text(
+                      'No comments yet\nBe the first to comment!',
+                      textAlign: TextAlign.center,
+                      style: TextStyle(
+                        color: Colors.grey,
+                        fontSize: 16,
                       ),
+                    ),
+                  )
+                      : ListView.builder(
+                    controller: scrollController,
+                    itemCount: _comments.length,
+                    itemBuilder: (context, index) {
+                      final comment = _comments[index];
+                      return CommentTile(
+                        comment: comment,
+                        index: index,
+                        onReply: () => _startReply(comment.username),
+                        serverBaseUrl: 'http://192.168.1.3:8080', // Pass base URL
+                      );
+                    },
+                  ),
+                ),
               ),
-
-              // Reply indicator
               if (_replyingTo != null)
                 Container(
                   padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
@@ -273,8 +268,6 @@ class _CommentsBottomSheetState extends State<CommentsBottomSheet> {
                     ],
                   ),
                 ),
-
-              // Enhanced comment input
               Container(
                 padding: const EdgeInsets.fromLTRB(16, 8, 16, 24),
                 decoration: BoxDecoration(
@@ -287,15 +280,12 @@ class _CommentsBottomSheetState extends State<CommentsBottomSheet> {
                   child: Row(
                     crossAxisAlignment: CrossAxisAlignment.end,
                     children: [
-                      CircleAvatar(
+                      widget.currentUserAvatar != null
+                          ? _buildAvatar(widget.currentUserAvatar!, 'http://192.168.1.3:8080')
+                          : const CircleAvatar(
                         radius: 18,
-                        backgroundColor: Colors.grey.shade800,
-                        backgroundImage: widget.currentUserAvatar != null
-                            ? NetworkImage(widget.currentUserAvatar!)
-                            : null,
-                        child: widget.currentUserAvatar == null
-                            ? const Icon(Icons.person, color: Colors.white)
-                            : null,
+                        backgroundColor: Colors.grey,
+                        child: Icon(Icons.person, color: Colors.white),
                       ),
                       const SizedBox(width: 12),
                       Expanded(
@@ -341,21 +331,21 @@ class _CommentsBottomSheetState extends State<CommentsBottomSheet> {
                         ),
                         child: _isSubmitting
                             ? const SizedBox(
-                                width: 20,
-                                height: 20,
-                                child: CircularProgressIndicator(
-                                  strokeWidth: 2,
-                                  valueColor:
-                                      AlwaysStoppedAnimation<Color>(Colors.white),
-                                ),
-                              )
+                          width: 20,
+                          height: 20,
+                          child: CircularProgressIndicator(
+                            strokeWidth: 2,
+                            valueColor:
+                            AlwaysStoppedAnimation<Color>(Colors.white),
+                          ),
+                        )
                             : const Text(
-                                'Post',
-                                style: TextStyle(
-                                  color: Colors.white,
-                                  fontWeight: FontWeight.bold,
-                                ),
-                              ),
+                          'Post',
+                          style: TextStyle(
+                            color: Colors.white,
+                            fontWeight: FontWeight.bold,
+                          ),
+                        ),
                       ),
                     ],
                   ),
@@ -367,18 +357,51 @@ class _CommentsBottomSheetState extends State<CommentsBottomSheet> {
       },
     );
   }
+
+  Widget _buildAvatar(String profilePicture, String serverBaseUrl) {
+    try {
+      // Check if the profilePicture is a base64 string
+      if (profilePicture.contains('data:image') || profilePicture.length > 100) {
+        final base64String = profilePicture.contains(',')
+            ? profilePicture.split(',')[1]
+            : profilePicture;
+        final imageBytes = base64Decode(base64String);
+        return CircleAvatar(
+          radius: 18,
+          backgroundImage: MemoryImage(imageBytes),
+          backgroundColor: Colors.grey,
+        );
+      }
+    } catch (e) {
+      print('Error decoding base64 image: $e');
+    }
+
+    // Handle URL image
+    String imageUrl = profilePicture;
+    if (!imageUrl.startsWith('http')) {
+      imageUrl = '$serverBaseUrl/uploads/$imageUrl';
+    }
+    return CircleAvatar(
+      radius: 18,
+      backgroundImage: NetworkImage(imageUrl),
+      backgroundColor: Colors.grey,
+      onBackgroundImageError: (_, __) => const Icon(Icons.person, color: Colors.white),
+    );
+  }
 }
 
 class CommentTile extends StatelessWidget {
   final Comment comment;
   final int index;
   final VoidCallback onReply;
+  final String serverBaseUrl;
 
   const CommentTile({
     Key? key,
     required this.comment,
     required this.index,
     required this.onReply,
+    required this.serverBaseUrl,
   }) : super(key: key);
 
   @override
@@ -395,18 +418,14 @@ class CommentTile extends StatelessWidget {
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          CircleAvatar(
+          comment.userAvatar != null
+              ? _buildAvatar(comment.userAvatar!)
+              : const CircleAvatar(
             radius: 18,
-            backgroundColor: Colors.grey.shade800,
-            backgroundImage: comment.userAvatar != null
-                ? NetworkImage(comment.userAvatar!)
-                : null,
-            child: comment.userAvatar == null
-                ? const Icon(Icons.person, color: Colors.white)
-                : null,
+            backgroundColor: Colors.grey,
+            child: Icon(Icons.person, color: Colors.white),
           ),
           const SizedBox(width: 12),
-
           Expanded(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
@@ -458,7 +477,6 @@ class CommentTile extends StatelessWidget {
               ],
             ),
           ),
-
           Column(
             children: [
               IconButton(
@@ -489,6 +507,37 @@ class CommentTile extends StatelessWidget {
           ),
         ],
       ),
+    );
+  }
+
+  Widget _buildAvatar(String profilePicture) {
+    try {
+      // Check if the profilePicture is a base64 string
+      if (profilePicture.contains('data:image') || profilePicture.length > 100) {
+        final base64String = profilePicture.contains(',')
+            ? profilePicture.split(',')[1]
+            : profilePicture;
+        final imageBytes = base64Decode(base64String);
+        return CircleAvatar(
+          radius: 18,
+          backgroundImage: MemoryImage(imageBytes),
+          backgroundColor: Colors.grey,
+        );
+      }
+    } catch (e) {
+      print('Error decoding base64 image: $e');
+    }
+
+    // Handle URL image
+    String imageUrl = profilePicture;
+    if (!imageUrl.startsWith('http')) {
+      imageUrl = '$serverBaseUrl/uploads/$imageUrl';
+    }
+    return CircleAvatar(
+      radius: 18,
+      backgroundImage: NetworkImage(imageUrl),
+      backgroundColor: Colors.grey,
+      onBackgroundImageError: (_, __) => const Icon(Icons.person, color: Colors.white),
     );
   }
 
