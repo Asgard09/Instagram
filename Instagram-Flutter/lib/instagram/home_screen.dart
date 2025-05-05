@@ -8,6 +8,7 @@ import '../data/providers/auth_provider.dart';
 import '../data/providers/posts_provider.dart';
 import '../models/post.dart';
 import '../widgets/popup_comment.dart';
+import '../widgets/popup_listlike.dart';
 import 'user_profile_screen.dart';
 import '../data/providers/likes_provider.dart';
 
@@ -156,6 +157,15 @@ class _PostItemState extends State<PostItem> {
     super.initState();
     _fetchLikeData();
   }
+  void _showLikesPopup() {
+    showDialog(
+      context: context,
+      builder: (context) => LikeListPopup(
+        postId: int.parse(widget.post.id.toString()),
+        onClose: () => Navigator.pop(context),
+      ),
+    );
+  }
   void _showCommentsSheet() {
     showModalBottomSheet(
       context: context,
@@ -164,8 +174,6 @@ class _PostItemState extends State<PostItem> {
       builder: (context) => CommentsBottomSheet(
         postId: int.parse(widget.post.id.toString()),
         onCommentSubmitted: (comment) {
-          // You can do something when a comment is posted
-          // For example, update a counter
         },
       ),
     );
@@ -331,11 +339,16 @@ class _PostItemState extends State<PostItem> {
                 if (_likeCount > 0)
                   Padding(
                     padding: const EdgeInsets.only(left: 4.0),
-                    child: Text(
-                      '$_likeCount',
-                      style: TextStyle(color: Colors.white, fontSize: 14),
+                    child: GestureDetector(
+                      onTap: _showLikesPopup,
+                      child: Text(
+                        '$_likeCount',
+                        style: TextStyle(color: Colors.white, fontSize: 14),
+                      ),
                     ),
                   ),
+
+
                 IconButton(
                   icon: const Icon(Icons.chat_bubble_outline, color: Colors.white),
                   onPressed: _showCommentsSheet,

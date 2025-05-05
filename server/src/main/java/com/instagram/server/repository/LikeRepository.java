@@ -29,8 +29,8 @@ public interface LikeRepository extends JpaRepository<Like, Long> {
     
     // Delete a like by user and post
     void deleteByUserAndPost(User user, Post post);
-    
     // Get users who liked a post
     @Query("SELECT l.user FROM Like l WHERE l.post.postId = :postId")
     List<User> findUsersByPostId(@Param("postId") Long postId);
+
 }
