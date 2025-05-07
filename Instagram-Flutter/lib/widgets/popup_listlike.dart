@@ -67,7 +67,7 @@ class _LikeListPopupState extends State<LikeListPopup> {
     try {
       final token = Provider.of<AuthProvider>(context, listen: false).token;
       final response = await http.get(
-        Uri.parse('http://192.168.1.3:8080/api/likes/users/post/${widget.postId}'),
+        Uri.parse('http://192.168.1.5:8080/api/likes/users/post/${widget.postId}'),
         headers: {
           'Authorization': 'Bearer $token',
           'Content-Type': 'application/json',
@@ -178,7 +178,7 @@ class _LikeListPopupState extends State<LikeListPopup> {
                     final user = _likes[index];
                     return LikeTile(
                       user: user,
-                      serverBaseUrl: 'http://192.168.1.3:8080',
+                      serverBaseUrl: 'http://192.168.1.5:8080',
                     );
                   },
                 ),
@@ -274,7 +274,7 @@ class LikeTile extends StatelessWidget {
 }
 
 class LikeService {
-  static const String baseUrl = 'http://192.168.1.3:8080';
+  static const String baseUrl = 'http://192.168.1.5:8080';
 
   Future<List<LikeUser>> getUsersWhoLikedPost(int postId) async {
     try {
