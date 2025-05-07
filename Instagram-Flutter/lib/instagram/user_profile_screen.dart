@@ -3,11 +3,9 @@ import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:provider/provider.dart';
 import '../data/providers/auth_provider.dart';
 import '../data/providers/user_provider.dart';
-import '../data/providers/chat_provider.dart';
 import '../models/user.dart';
 import 'package:http/http.dart' as http;
 import 'dart:convert';
-import 'chat_screen.dart';
 
 class UserProfileScreen extends StatefulWidget {
   final String userId;
@@ -38,10 +36,10 @@ class _UserProfileScreenState extends State<UserProfileScreen> {
   String get serverBaseUrl {
     if (kIsWeb) {
       // Use the specific IP for web
-      return 'http://192.168.1.5:8080';
+      return 'http://192.168.1.6:8080';
     } else {
       // For mobile platforms
-      return 'http://192.168.1.5:8080';
+      return 'http://192.168.1.6:8080';
     }
   }
 
@@ -323,53 +321,6 @@ class _UserProfileScreenState extends State<UserProfileScreen> {
       });
     }
   }
-  
-  // Function to handle starting a chat with this user
-  Future<void> _startChat() async {
-    if (userData == null || userData!.userId == null) {
-      _showError('Cannot start chat: user information is incomplete');
-      return;
-    }
-    
-    setState(() {
-      isProcessing = true;
-    });
-    
-    try {
-      final token = Provider.of<AuthProvider>(context, listen: false).token;
-      if (token == null) {
-        _showError('Authentication token not found');
-        return;
-      }
-      
-      // Use ChatProvider to create or get the chat
-      final chatProvider = Provider.of<ChatProvider>(context, listen: false);
-      final chat = await chatProvider.getOrCreateChatWithUser(userData!.userId!, token);
-      
-      if (chat != null) {
-        // Navigate to the chat screen
-        if (!mounted) return;
-        
-        Navigator.push(
-          context,
-          MaterialPageRoute(
-            builder: (context) => ChatScreen(chatId: chat.chatId),
-          ),
-        );
-      } else {
-        _showError('Failed to create chat room');
-      }
-    } catch (e) {
-      print('Exception during chat creation: $e');
-      _showError('Error starting chat: $e');
-    } finally {
-      if (mounted) {
-        setState(() {
-          isProcessing = false;
-        });
-      }
-    }
-  }
 
   void _showError(String message) {
     // Only show error if mounted
@@ -422,103 +373,64 @@ class _UserProfileScreenState extends State<UserProfileScreen> {
     }
   }
 
-  Widget _buildActionButtons() {
-    // Don't show buttons if we couldn't fetch the user
+  Widget _buildFollowButton() {
+    // Don't show follow button if we couldn't fetch the user
     if (userData == null) {
       return const SizedBox.shrink();
     }
     
-    // Check if this is the current user's profile
+    // Kiểm tra xem có phải user hiện tại không
     final userProvider = Provider.of<UserProvider>(context, listen: false);
     final currentUser = userProvider.user;
     
-    // If viewing your own profile, don't show follow/message buttons
+    // Nếu đang xem chính profile của mình, không hiển thị nút Follow
     if (currentUser != null && userData?.userId != null && 
         currentUser.userId.toString() == userData!.userId.toString()) {
       return const SizedBox.shrink();
     }
     
-    // Show Follow and Message buttons
-    return Row(
-      children: [
-        // Follow button
-        Expanded(
-          child: AnimatedContainer(
-            duration: Duration(milliseconds: 300),
-            child: ElevatedButton(
-              onPressed: isProcessing ? null : _toggleFollow,
-              style: ElevatedButton.styleFrom(
-                backgroundColor: isFollowing ? Colors.grey[800] : Colors.blue,
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(8),
-                ),
-                padding: EdgeInsets.symmetric(vertical: 12),
-              ),
-              child: isProcessing
-                  ? const SizedBox(
-                      height: 20,
-                      width: 20,
-                      child: CircularProgressIndicator(
-                        strokeWidth: 2,
-                        valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
-                      ),
-                    )
-                  : Row(
-                      mainAxisAlignment: MainAxisAlignment.center,
-                      children: [
-                        Icon(
-                          isFollowing ? Icons.how_to_reg : Icons.person_add,
-                          color: Colors.white,
-                          size: 18,
-                        ),
-                        SizedBox(width: 8),
-                        Text(
-                          isFollowing ? 'Following' : 'Follow',
-                          style: const TextStyle(
-                            color: Colors.white,
-                            fontWeight: FontWeight.bold,
-                          ),
-                        ),
-                      ],
-                    ),
+    return SizedBox(
+      width: double.infinity,
+      child: AnimatedContainer(
+        duration: Duration(milliseconds: 300),
+        child: ElevatedButton(
+          onPressed: isProcessing ? null : _toggleFollow,
+          style: ElevatedButton.styleFrom(
+            backgroundColor: isFollowing ? Colors.grey[800] : Colors.blue,
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(8),
             ),
+            padding: EdgeInsets.symmetric(vertical: 12),
           ),
-        ),
-        
-        SizedBox(width: 8),
-        
-        // Message button
-        Expanded(
-          child: ElevatedButton(
-            onPressed: isProcessing ? null : _startChat,
-            style: ElevatedButton.styleFrom(
-              backgroundColor: Colors.grey[800],
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(8),
-              ),
-              padding: EdgeInsets.symmetric(vertical: 12),
-            ),
-            child: Row(
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: [
-                Icon(
-                  Icons.message_outlined,
-                  color: Colors.white,
-                  size: 18,
-                ),
-                SizedBox(width: 8),
-                Text(
-                  'Message',
-                  style: const TextStyle(
-                    color: Colors.white,
-                    fontWeight: FontWeight.bold,
+          child: isProcessing
+              ? const SizedBox(
+                  height: 20,
+                  width: 20,
+                  child: CircularProgressIndicator(
+                    strokeWidth: 2,
+                    valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
                   ),
+                )
+              : Row(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    Icon(
+                      isFollowing ? Icons.how_to_reg : Icons.person_add,
+                      color: Colors.white,
+                      size: 18,
+                    ),
+                    SizedBox(width: 8),
+                    Text(
+                      isFollowing ? 'Following' : 'Follow',
+                      style: const TextStyle(
+                        color: Colors.white,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                  ],
                 ),
-              ],
-            ),
-          ),
         ),
-      ],
+      ),
     );
   }
 
@@ -572,7 +484,7 @@ class _UserProfileScreenState extends State<UserProfileScreen> {
                         const SizedBox(height: 16),
                         _buildUserInfoSection(),
                         const SizedBox(height: 16),
-                        _buildActionButtons(), // Changed from _buildFollowButton to _buildActionButtons
+                        _buildFollowButton(),
                         const SizedBox(height: 24),
                         const DefaultTabController(
                           length: 2,

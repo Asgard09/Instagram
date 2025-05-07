@@ -5,8 +5,6 @@ import '../data/providers/auth_provider.dart';
 import '../data/providers/user_provider.dart';
 import '../models/user.dart';
 import 'edit_profile_screen.dart';
-import 'package:http/http.dart' as http;
-import 'dart:convert';
 
 class ProfileScreen extends StatefulWidget {
   const ProfileScreen({Key? key}) : super(key: key);
@@ -16,21 +14,6 @@ class ProfileScreen extends StatefulWidget {
 }
 
 class _ProfileScreenState extends State<ProfileScreen> {
-  int followersCount = 0;
-  int followingCount = 0;
-  int postsCount = 0;
-  
-  // Helper method to get the base URL for server resources
-  String get serverBaseUrl {
-    if (kIsWeb) {
-      // Use the specific IP for web
-      return 'http://192.168.1.5:8080';
-    } else {
-      // For mobile platforms
-      return 'http://192.168.1.5:8080';
-    }
-  }
-  
   @override
   void initState() {
     super.initState();
@@ -44,97 +27,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
   Future<void> _loadUserData() async {
     final token = Provider.of<AuthProvider>(context, listen: false).token;
     if (token != null) {
-      // Fetch user data
       await Provider.of<UserProvider>(context, listen: false).fetchCurrentUser(token);
-      
-      // Get the current user after fetching
-      final currentUser = Provider.of<UserProvider>(context, listen: false).user;
-      if (currentUser?.userId != null) {
-        await _loadFollowStats(currentUser!.userId.toString(), token);
-      }
-    }
-  }
-  
-  Future<void> _loadFollowStats(String userId, String token) async {
-    try {
-      // First try to get all stats in a single call
-      var followResponse = await http.get(
-        Uri.parse('${serverBaseUrl}/api/follows/user/$userId'),
-        headers: {
-          'Authorization': 'Bearer $token',
-          'Content-Type': 'application/json',
-        },
-      );
-      
-      if (followResponse.statusCode == 200) {
-        final followData = json.decode(followResponse.body);
-        setState(() {
-          followersCount = followData['followersCount'] ?? 0;
-          followingCount = followData['followingCount'] ?? 0;
-          postsCount = followData['postsCount'] ?? 0;
-        });
-      } else {
-        // Fallback to individual endpoints if combined endpoint fails
-        await _loadIndividualStats(userId, token);
-      }
-    } catch (e) {
-      print('Error loading follow stats: $e');
-      // Try individual endpoints as fallback
-      await _loadIndividualStats(userId, token);
-    }
-  }
-  
-  Future<void> _loadIndividualStats(String userId, String token) async {
-    try {
-      // Get followers count
-      var followersCountResponse = await http.get(
-        Uri.parse('${serverBaseUrl}/api/follows/followers/count/$userId'),
-        headers: {
-          'Authorization': 'Bearer $token',
-          'Content-Type': 'application/json',
-        },
-      );
-      
-      // Get following count
-      var followingCountResponse = await http.get(
-        Uri.parse('${serverBaseUrl}/api/follows/following/count/$userId'),
-        headers: {
-          'Authorization': 'Bearer $token',
-          'Content-Type': 'application/json',
-        },
-      );
-      
-      // Get posts count
-      var postsCountResponse = await http.get(
-        Uri.parse('${serverBaseUrl}/api/follows/posts/count/$userId'),
-        headers: {
-          'Authorization': 'Bearer $token',
-          'Content-Type': 'application/json',
-        },
-      );
-      
-      if (followersCountResponse.statusCode == 200) {
-        final data = json.decode(followersCountResponse.body);
-        setState(() {
-          followersCount = data['count'] ?? 0;
-        });
-      }
-      
-      if (followingCountResponse.statusCode == 200) {
-        final data = json.decode(followingCountResponse.body);
-        setState(() {
-          followingCount = data['count'] ?? 0;
-        });
-      }
-      
-      if (postsCountResponse.statusCode == 200) {
-        final data = json.decode(postsCountResponse.body);
-        setState(() {
-          postsCount = data['count'] ?? 0;
-        });
-      }
-    } catch (e) {
-      print('Error loading individual stats: $e');
     }
   }
   
@@ -143,7 +36,10 @@ class _ProfileScreenState extends State<ProfileScreen> {
       // Add server base URL if the path is relative
       String imageUrl = profilePicture;
       if (!imageUrl.startsWith('http')) {
-        imageUrl = '${serverBaseUrl}/uploads/$imageUrl';
+        String serverUrl = kIsWeb 
+            ? 'http://192.168.1.6:8080'
+            : 'http://192.168.1.6:8080';
+        imageUrl = '$serverUrl/uploads/$imageUrl';
       }
       
       print('Loading profile image from URL: $imageUrl');
@@ -261,9 +157,9 @@ class _ProfileScreenState extends State<ProfileScreen> {
                         child: Row(
                           mainAxisAlignment: MainAxisAlignment.spaceEvenly,
                           children: [
-                            _buildStat(postsCount, 'Posts'),
-                            _buildStat(followersCount, 'Followers'),
-                            _buildStat(followingCount, 'Following'),
+                            _buildStat(0, 'Posts'),
+                            _buildStat(0, 'Followers'),
+                            _buildStat(0, 'Following'),
                           ],
                         ),
                       ),

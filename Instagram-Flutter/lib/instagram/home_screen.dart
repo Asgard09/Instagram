@@ -6,11 +6,15 @@ import 'package:provider/provider.dart';
 import 'package:flutter/foundation.dart' show kIsWeb;
 import '../data/providers/auth_provider.dart';
 import '../data/providers/posts_provider.dart';
+import '../data/providers/user_provider.dart'; // Added for accessing current user info
 import '../models/post.dart';
 import '../widgets/popup_comment.dart';
 import '../widgets/popup_listlike.dart';
+import 'main_screen.dart';
 import 'user_profile_screen.dart';
+import 'profile_screen.dart'; // Import ProfileScreen
 import '../data/providers/likes_provider.dart';
+import '../services/user_service.dart'; // Added for user service to get current user
 
 class HomeScreen extends StatefulWidget {
   const HomeScreen({Key? key}) : super(key: key);
@@ -24,10 +28,10 @@ class _HomeScreenState extends State<HomeScreen> {
   String get serverBaseUrl {
     if (kIsWeb) {
       // Use the specific IP for web
-      return 'http://192.168.1.5:8080';
+      return 'http://192.168.1.6:8080';
     } else {
       // For mobile platforms
-      return 'http://192.168.1.5:8080';
+      return 'http://192.168.1.6:8080';
     }
   }
 
@@ -55,76 +59,79 @@ class _HomeScreenState extends State<HomeScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: Colors.black,
-      body: Column(
-        children: [
-          Container(
-            padding: const EdgeInsets.only(left: 16, right: 16, top: 8, bottom: 4),
-            alignment: Alignment.centerLeft,
-            child: const Text(
-              'Instagram',
-              style: TextStyle(
-                color: Colors.white,
-                fontWeight: FontWeight.bold,
-                fontSize: 24,
-              ),
-            ),
+      appBar: AppBar(
+        backgroundColor: Colors.black,
+        elevation: 0,
+        title: const Text(
+          'Instagram',
+          style: TextStyle(
+            color: Colors.white,
+            fontWeight: FontWeight.bold,
           ),
-          Expanded(
-            child: RefreshIndicator(
-              onRefresh: _refreshPosts,
-              child: Consumer<PostsProvider>(
-                builder: (context, postsProvider, child) {
-                  if (postsProvider.isLoading && postsProvider.posts.isEmpty) {
-                    return const Center(
-                      child: CircularProgressIndicator(
-                        color: Colors.white,
-                      ),
-                    );
-                  }
-
-                  if (postsProvider.error != null && postsProvider.posts.isEmpty) {
-                    return Center(
-                      child: Column(
-                        mainAxisAlignment: MainAxisAlignment.center,
-                        children: [
-                          Text(
-                            'Failed to load posts',
-                            style: TextStyle(color: Colors.white),
-                          ),
-                          TextButton(
-                            onPressed: _loadPosts,
-                            child: Text('Retry'),
-                          ),
-                        ],
-                      ),
-                    );
-                  }
-
-                  final posts = postsProvider.posts;
-
-                  if (posts.isEmpty) {
-                    return Center(
-                      child: Text(
-                        'No posts yet',
-                        style: TextStyle(color: Colors.white),
-                      ),
-                    );
-                  }
-
-                  return ListView.builder(
-                    itemCount: posts.length,
-                    itemBuilder: (context, index) {
-                      return PostItem(
-                        post: posts[index],
-                        serverBaseUrl: serverBaseUrl,
-                      );
-                    },
-                  );
-                },
-              ),
-            ),
+        ),
+        actions: [
+          IconButton(
+            icon: const Icon(Icons.favorite_border, color: Colors.white),
+            onPressed: () {},
+          ),
+          IconButton(
+            icon: const Icon(Icons.chat_bubble_outline, color: Colors.white),
+            onPressed: () {},
           ),
         ],
+      ),
+      body: RefreshIndicator(
+        onRefresh: _refreshPosts,
+        child: Consumer<PostsProvider>(
+          builder: (context, postsProvider, child) {
+            if (postsProvider.isLoading && postsProvider.posts.isEmpty) {
+              return const Center(
+                child: CircularProgressIndicator(
+                  color: Colors.white,
+                ),
+              );
+            }
+
+            if (postsProvider.error != null && postsProvider.posts.isEmpty) {
+              return Center(
+                child: Column(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    Text(
+                      'Failed to load posts',
+                      style: TextStyle(color: Colors.white),
+                    ),
+                    TextButton(
+                      onPressed: _loadPosts,
+                      child: Text('Retry'),
+                    ),
+                  ],
+                ),
+              );
+            }
+
+            final posts = postsProvider.posts;
+
+            if (posts.isEmpty) {
+              return Center(
+                child: Text(
+                  'No posts yet',
+                  style: TextStyle(color: Colors.white),
+                ),
+              );
+            }
+
+            return ListView.builder(
+              itemCount: posts.length,
+              itemBuilder: (context, index) {
+                return PostItem(
+                  post: posts[index],
+                  serverBaseUrl: serverBaseUrl,
+                );
+              },
+            );
+          },
+        ),
       ),
     );
   }
@@ -148,12 +155,41 @@ class _PostItemState extends State<PostItem> {
   bool _isLiked = false;
   int _likeCount = 0;
   bool _isLoading = false;
+  int? _currentUserId; // Store current user ID
 
   @override
   void initState() {
     super.initState();
     _fetchLikeData();
+    _getCurrentUserId(); // Get current user ID when component initializes
   }
+
+  // Function to get the current user ID from token
+  Future<void> _getCurrentUserId() async {
+    try {
+      final token = Provider.of<AuthProvider>(context, listen: false).token;
+      if (token == null || token.isEmpty) {
+        print('Token is empty or null');
+        return;
+      }
+
+      // Use the UserService to get the current user data
+      final userService = UserService();
+      final currentUser = await userService.getCurrentUser(token);
+
+      if (currentUser != null && currentUser.userId != null) {
+        setState(() {
+          _currentUserId = currentUser.userId;
+        });
+        print('Current user ID: $_currentUserId');
+      } else {
+        print('Failed to get current user or user ID is null');
+      }
+    } catch (e) {
+      print('Error getting current user ID: $e');
+    }
+  }
+
   void _showLikesPopup() {
     showDialog(
       context: context,
@@ -163,6 +199,7 @@ class _PostItemState extends State<PostItem> {
       ),
     );
   }
+
   void _showCommentsSheet() {
     showModalBottomSheet(
       context: context,
@@ -175,6 +212,7 @@ class _PostItemState extends State<PostItem> {
       ),
     );
   }
+
   Future<void> _fetchLikeData() async {
     final token = Provider.of<AuthProvider>(context, listen: false).token;
     if (token != null && widget.post.id != null) {
@@ -227,6 +265,40 @@ class _PostItemState extends State<PostItem> {
     });
   }
 
+  // Navigate to profile based on whether it's the current user or not
+  void _navigateToProfile(String userId, {String? username, String? profilePicture}) {
+    print('Navigation check - Post userId: $userId, Current userId: $_currentUserId');
+
+    // Convert to strings for reliable comparison
+    String postUserId = userId.toString();
+    String? currentUserId = _currentUserId?.toString();
+
+    // Check if this is the current logged-in user
+    if (currentUserId != null && postUserId == currentUserId) {
+      print('Navigating to ProfileScreen (current user)');
+
+      // Use Navigator to pop back to MainScreen and rebuild it with the profile tab
+      Navigator.of(context).pushAndRemoveUntil(
+        MaterialPageRoute(
+          builder: (context) => MainScreen(initialTabIndex: 4), // Pass the profile tab index
+        ),
+            (Route<dynamic> route) => false, // Remove all previous routes
+      );
+    } else {
+      print('Navigating to UserProfileScreen (different user)');
+      Navigator.push(
+        context,
+        MaterialPageRoute(
+          builder: (context) => UserProfileScreen(
+            userId: userId,
+            initialUsername: username,
+            initialProfilePicture: profilePicture,
+          ),
+        ),
+      );
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     // Debug post data
@@ -260,28 +332,18 @@ class _PostItemState extends State<PostItem> {
                   onTap: () {
                     if (widget.post.userId != null) {
                       final userId = widget.post.userId.toString();
-                      print('Navigating to profile from username tap - userId: $userId, username: ${widget.post.username}');
+                      print('Username tap - userId: $userId, username: ${widget.post.username}');
 
-                      Navigator.push(
-                        context,
-                        MaterialPageRoute(
-                          builder: (context) => UserProfileScreen(
-                            userId: userId,
-                            initialUsername: widget.post.username,
-                          ),
-                        ),
+                      _navigateToProfile(
+                        userId,
+                        username: widget.post.username,
                       );
                     } else if (widget.post.username != null && widget.post.username!.isNotEmpty) {
                       // If no userId but we have username, try to navigate with just the username
-                      print('No userId available, trying to navigate with just username: ${widget.post.username}');
-                      Navigator.push(
-                        context,
-                        MaterialPageRoute(
-                          builder: (context) => UserProfileScreen(
-                            userId: "0", // Use a placeholder
-                            initialUsername: widget.post.username,
-                          ),
-                        ),
+                      print('No userId available, trying with just username: ${widget.post.username}');
+                      _navigateToProfile(
+                        "0", // Use a placeholder
+                        username: widget.post.username,
                       );
                     } else {
                       ScaffoldMessenger.of(context).showSnackBar(
@@ -344,7 +406,6 @@ class _PostItemState extends State<PostItem> {
                       ),
                     ),
                   ),
-
 
                 IconButton(
                   icon: const Icon(Icons.chat_bubble_outline, color: Colors.white),
@@ -526,6 +587,7 @@ class _PostItemState extends State<PostItem> {
       );
     }
   }
+
   Widget _buildUserAvatar() {
     // Debug - print userId directly to check its value
     print('Building avatar for post with userId: ${widget.post.userId}, username: ${widget.post.username}');
@@ -540,31 +602,20 @@ class _PostItemState extends State<PostItem> {
           // Check and convert userId to ensure it's a proper value
           if (widget.post.userId != null) {
             var userId = widget.post.userId.toString();
-            print('Navigating to profile from avatar - userId: $userId, username: ${widget.post.username}');
+            print('Avatar tap - userId: $userId, username: ${widget.post.username}');
 
-            // Debug - print what gets passed to the UserProfileScreen
-            Navigator.push(
-              context,
-              MaterialPageRoute(
-                builder: (context) => UserProfileScreen(
-                  userId: userId,
-                  initialUsername: widget.post.username,
-                ),
-              ),
+            _navigateToProfile(
+              userId,
+              username: widget.post.username,
             );
           } else {
             print('Cannot navigate to profile: userId is null');
             // Try to navigate with just the username if available
             if (widget.post.username != null && widget.post.username!.isNotEmpty) {
               print('Attempting to navigate with just username: ${widget.post.username}');
-              Navigator.push(
-                context,
-                MaterialPageRoute(
-                  builder: (context) => UserProfileScreen(
-                    userId: "0", // Use a placeholder
-                    initialUsername: widget.post.username,
-                  ),
-                ),
+              _navigateToProfile(
+                "0", // Use a placeholder
+                username: widget.post.username,
               );
             } else {
               ScaffoldMessenger.of(context).showSnackBar(
@@ -621,17 +672,12 @@ class _PostItemState extends State<PostItem> {
                         onTap: () {
                           // Use the userId from the API response if available, otherwise fallback to the post's userId
                           final userIdToUse = userId != null ? userId.toString() : (widget.post.userId != null ? widget.post.userId.toString() : "0");
-                          print('Navigating to profile from base64 avatar - userId: $userIdToUse');
+                          print('Base64 avatar tap - userId: $userIdToUse');
 
-                          Navigator.push(
-                            context,
-                            MaterialPageRoute(
-                              builder: (context) => UserProfileScreen(
-                                userId: userIdToUse,
-                                initialUsername: widget.post.username,
-                                initialProfilePicture: profilePictureToPass,
-                              ),
-                            ),
+                          _navigateToProfile(
+                            userIdToUse,
+                            username: widget.post.username,
+                            profilePicture: profilePictureToPass,
                           );
                         },
                         child: CircleAvatar(
@@ -655,17 +701,12 @@ class _PostItemState extends State<PostItem> {
                       onTap: () {
                         // Use the userId from the API response if available, otherwise fallback to the post's userId
                         final userIdToUse = userId != null ? userId.toString() : (widget.post.userId != null ? widget.post.userId.toString() : "0");
-                        print('Navigating to profile from URL avatar - userId: $userIdToUse');
+                        print('URL avatar tap - userId: $userIdToUse');
 
-                        Navigator.push(
-                          context,
-                          MaterialPageRoute(
-                            builder: (context) => UserProfileScreen(
-                              userId: userIdToUse,
-                              initialUsername: widget.post.username,
-                              initialProfilePicture: profilePictureToPass,
-                            ),
-                          ),
+                        _navigateToProfile(
+                          userIdToUse,
+                          username: widget.post.username,
+                          profilePicture: profilePictureToPass,
                         );
                       },
                       child: CircleAvatar(
@@ -688,16 +729,11 @@ class _PostItemState extends State<PostItem> {
               onTap: () {
                 if (widget.post.userId != null) {
                   final userId = widget.post.userId.toString();
-                  print('Navigating to profile from default avatar - userId: $userId');
+                  print('Default avatar tap - userId: $userId');
 
-                  Navigator.push(
-                    context,
-                    MaterialPageRoute(
-                      builder: (context) => UserProfileScreen(
-                        userId: userId,
-                        initialUsername: widget.post.username,
-                      ),
-                    ),
+                  _navigateToProfile(
+                    userId,
+                    username: widget.post.username,
                   );
                 } else {
                   print('Cannot navigate: userId is null');
@@ -719,15 +755,10 @@ class _PostItemState extends State<PostItem> {
       onTap: () {
         if (widget.post.userId != null) {
           final userId = widget.post.userId.toString();
-          print('Navigating to profile from default avatar (no username) - userId: $userId');
+          print('Default avatar (no username) tap - userId: $userId');
 
-          Navigator.push(
-            context,
-            MaterialPageRoute(
-              builder: (context) => UserProfileScreen(
-                userId: userId,
-              ),
-            ),
+          _navigateToProfile(
+            userId,
           );
         } else {
           print('Cannot navigate: no userId and no username available');
