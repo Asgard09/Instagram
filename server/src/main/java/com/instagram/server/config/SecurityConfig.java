@@ -50,6 +50,7 @@ public class SecurityConfig {
                                 .requestMatchers(HttpMethod.OPTIONS, "/**").permitAll()
                                 .requestMatchers("/auth/login/**", "/auth/register/**").permitAll()
                                 .requestMatchers("/uploads/**", "/error/**").permitAll()
+                                .requestMatchers("/ws/**", "/app/**", "/topic/**", "/user/**", "/queue/**").permitAll()
                                 .requestMatchers(HttpMethod.GET, "/api/posts", "/api/posts/**").permitAll()
                                 .requestMatchers(HttpMethod.POST, "/api/posts", "/api/posts/**").authenticated()
                                 .requestMatchers(HttpMethod.PUT, "/api/posts/**").authenticated()
