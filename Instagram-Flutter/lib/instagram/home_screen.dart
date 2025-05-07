@@ -55,79 +55,76 @@ class _HomeScreenState extends State<HomeScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: Colors.black,
-      appBar: AppBar(
-        backgroundColor: Colors.black,
-        elevation: 0,
-        title: const Text(
-          'Instagram',
-          style: TextStyle(
-            color: Colors.white,
-            fontWeight: FontWeight.bold,
+      body: Column(
+        children: [
+          Container(
+            padding: const EdgeInsets.only(left: 16, right: 16, top: 8, bottom: 4),
+            alignment: Alignment.centerLeft,
+            child: const Text(
+              'Instagram',
+              style: TextStyle(
+                color: Colors.white,
+                fontWeight: FontWeight.bold,
+                fontSize: 24,
+              ),
+            ),
           ),
-        ),
-        actions: [
-          IconButton(
-            icon: const Icon(Icons.favorite_border, color: Colors.white),
-            onPressed: () {},
-          ),
-          IconButton(
-            icon: const Icon(Icons.chat_bubble_outline, color: Colors.white),
-            onPressed: () {},
+          Expanded(
+            child: RefreshIndicator(
+              onRefresh: _refreshPosts,
+              child: Consumer<PostsProvider>(
+                builder: (context, postsProvider, child) {
+                  if (postsProvider.isLoading && postsProvider.posts.isEmpty) {
+                    return const Center(
+                      child: CircularProgressIndicator(
+                        color: Colors.white,
+                      ),
+                    );
+                  }
+
+                  if (postsProvider.error != null && postsProvider.posts.isEmpty) {
+                    return Center(
+                      child: Column(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          Text(
+                            'Failed to load posts',
+                            style: TextStyle(color: Colors.white),
+                          ),
+                          TextButton(
+                            onPressed: _loadPosts,
+                            child: Text('Retry'),
+                          ),
+                        ],
+                      ),
+                    );
+                  }
+
+                  final posts = postsProvider.posts;
+
+                  if (posts.isEmpty) {
+                    return Center(
+                      child: Text(
+                        'No posts yet',
+                        style: TextStyle(color: Colors.white),
+                      ),
+                    );
+                  }
+
+                  return ListView.builder(
+                    itemCount: posts.length,
+                    itemBuilder: (context, index) {
+                      return PostItem(
+                        post: posts[index],
+                        serverBaseUrl: serverBaseUrl,
+                      );
+                    },
+                  );
+                },
+              ),
+            ),
           ),
         ],
-      ),
-      body: RefreshIndicator(
-        onRefresh: _refreshPosts,
-        child: Consumer<PostsProvider>(
-          builder: (context, postsProvider, child) {
-            if (postsProvider.isLoading && postsProvider.posts.isEmpty) {
-              return const Center(
-                child: CircularProgressIndicator(
-                  color: Colors.white,
-                ),
-              );
-            }
-
-            if (postsProvider.error != null && postsProvider.posts.isEmpty) {
-              return Center(
-                child: Column(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: [
-                    Text(
-                      'Failed to load posts',
-                      style: TextStyle(color: Colors.white),
-                    ),
-                    TextButton(
-                      onPressed: _loadPosts,
-                      child: Text('Retry'),
-                    ),
-                  ],
-                ),
-              );
-            }
-
-            final posts = postsProvider.posts;
-
-            if (posts.isEmpty) {
-              return Center(
-                child: Text(
-                  'No posts yet',
-                  style: TextStyle(color: Colors.white),
-                ),
-              );
-            }
-
-            return ListView.builder(
-              itemCount: posts.length,
-              itemBuilder: (context, index) {
-                return PostItem(
-                  post: posts[index],
-                  serverBaseUrl: serverBaseUrl,
-                );
-              },
-            );
-          },
-        ),
       ),
     );
   }

@@ -38,7 +38,7 @@ public class FollowService {
                 .orElseThrow(() -> new RuntimeException("User not found"));
         
         // Get user to follow
-        User followee = userRepository.findById(Math.toIntExact(followeeId))
+        User followee = userRepository.findById((long) Math.toIntExact(followeeId))
                 .orElseThrow(() -> new RuntimeException("User to follow not found"));
         
         // Check if already following
@@ -69,7 +69,7 @@ public class FollowService {
                 .orElseThrow(() -> new RuntimeException("User not found"));
         
         // Get user to unfollow
-        User followee = userRepository.findById(Math.toIntExact(followeeId))
+        User followee = userRepository.findById((long) Math.toIntExact(followeeId))
                 .orElseThrow(() -> new RuntimeException("User to unfollow not found"));
         
         // Delete follow relationship
@@ -86,7 +86,7 @@ public class FollowService {
                 .orElseThrow(() -> new RuntimeException("User not found"));
         
         // Get user to check
-        User followee = userRepository.findById(Math.toIntExact(followeeId))
+        User followee = userRepository.findById((long) Math.toIntExact(followeeId))
                 .orElseThrow(() -> new RuntimeException("User not found"));
         
         return followRepository.existsByFollowerAndFollowee(follower, followee);
@@ -96,10 +96,10 @@ public class FollowService {
      * Check if specific user is following another user
      */
     public boolean isUserFollowing(Long followerId, Long followeeId) {
-        User follower = userRepository.findById(Math.toIntExact(followerId))
+        User follower = userRepository.findById((long) Math.toIntExact(followerId))
                 .orElseThrow(() -> new RuntimeException("Follower user not found"));
         
-        User followee = userRepository.findById(Math.toIntExact(followeeId))
+        User followee = userRepository.findById((long) Math.toIntExact(followeeId))
                 .orElseThrow(() -> new RuntimeException("Followee user not found"));
         
         return followRepository.existsByFollowerAndFollowee(follower, followee);
@@ -109,7 +109,7 @@ public class FollowService {
      * Get followers count for a user
      */
     public int getFollowersCount(Long userId) {
-        User user = userRepository.findById(Math.toIntExact(userId))
+        User user = userRepository.findById((long) Math.toIntExact(userId))
                 .orElseThrow(() -> new RuntimeException("User not found"));
         
         return followRepository.countByFollowee(user);
@@ -119,7 +119,7 @@ public class FollowService {
      * Get following count for a user
      */
     public int getFollowingCount(Long userId) {
-        User user = userRepository.findById(Math.toIntExact(userId))
+        User user = userRepository.findById((long) Math.toIntExact(userId))
                 .orElseThrow(() -> new RuntimeException("User not found"));
         
         return followRepository.countByFollower(user);
@@ -129,7 +129,7 @@ public class FollowService {
      * Get posts count for a user
      */
     public int getPostsCount(Long userId) {
-        User user = userRepository.findById(Math.toIntExact(userId))
+        User user = userRepository.findById((long) Math.toIntExact(userId))
                 .orElseThrow(() -> new RuntimeException("User not found"));
         
         return postRepository.countByUser(user);
@@ -139,7 +139,7 @@ public class FollowService {
      * Get all followers of a user
      */
     public List<User> getFollowers(Long userId) {
-        User user = userRepository.findById(Math.toIntExact(userId))
+        User user = userRepository.findById((long) Math.toIntExact(userId))
                 .orElseThrow(() -> new RuntimeException("User not found"));
         
         return followRepository.findFollowersByUser(user);
@@ -149,7 +149,7 @@ public class FollowService {
      * Get all users that a user is following
      */
     public List<User> getFollowing(Long userId) {
-        User user = userRepository.findById(Math.toIntExact(userId))
+        User user = userRepository.findById((long) Math.toIntExact(userId))
                 .orElseThrow(() -> new RuntimeException("User not found"));
         
         return followRepository.findFollowingByUser(user);

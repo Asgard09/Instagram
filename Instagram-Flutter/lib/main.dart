@@ -8,6 +8,7 @@ import 'data/providers/auth_provider.dart';
 import 'data/providers/posts_provider.dart';
 import 'data/providers/user_provider.dart';
 import 'data/providers/likes_provider.dart';
+import 'data/providers/chat_provider.dart';
 import 'instagram/main_screen.dart';
 
 // Import mobile implementation only on non-web platforms
@@ -22,6 +23,7 @@ void main() {
         ChangeNotifierProvider(create: (context) => UserProvider()),
         ChangeNotifierProvider(create: (context) => PostsProvider()),
         ChangeNotifierProvider(create: (context) => LikesProvider()),
+        ChangeNotifierProvider(create: (context) => ChatProvider()),
       ],
       child: MyApp(),
     ),

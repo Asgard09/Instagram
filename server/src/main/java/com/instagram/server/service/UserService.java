@@ -123,7 +123,7 @@ public class UserService {
     
     // Get user by ID
     public User getUserById(Long userId) {
-        return userRepository.findById(Math.toIntExact(userId))
+        return userRepository.findById((long) Math.toIntExact(userId))
                 .orElseThrow(() -> new RuntimeException("User not found"));
     }
 } 

@@ -5,7 +5,7 @@ import 'package:practice_widgets/instagram/profile_screen.dart';
 import 'home_screen.dart'; // Trang Home
 import 'search_screen.dart'; // Trang Search
 import 'reels_screen.dart'; // Trang Reels
-import 'chat_screen.dart'; // Trang Chat
+import 'chat_list_screen.dart'; // Show chat list instead of a specific chat
 
 class MainScreen extends StatefulWidget {
   const MainScreen({super.key});
@@ -22,7 +22,7 @@ class _MainScreenState extends State<MainScreen> {
      HomeScreen(), // Sử dụng HomeScreen từ home_screen.dart
      SearchScreen(), // Sử dụng SearchScreen từ search_screen.dart
      ReelsScreen(), // Sử dụng ReelsScreen từ reels_screen.dart
-     ChatScreen(), // Sử dụng ChatScreen từ chat_screen.dart
+     ChatListScreen(), // Show chat list instead of a specific chat
      ProfileScreen(), // Sử dụng ProfileScreen từ profile_screen.dart
   ];
 

@@ -33,7 +33,7 @@ public class Message {
     @Temporal(TemporalType.TIMESTAMP)
     private Date createdAt;
 
-    @Column(name = "read", nullable = false)
+    @Column(name = "is_read", nullable = false)
     private boolean read = false;
 
     @PrePersist
