@@ -1,15 +1,18 @@
 import 'dart:convert';
 import 'dart:io';
+import 'dart:math';
 import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:http/http.dart' as http;
 import '../models/user.dart';
 
 class UserService {
-  final String baseUrl = 'http://192.168.1.6:8080/api';
+  final String baseUrl = 'http://192.168.1.5:8080/api';
 
   // Get the current user's profile
   Future<User?> getCurrentUser(String token) async {
     try {
+      print('Fetching current user profile with token: ${token.substring(0, min(20, token.length))}...');
+      
       final response = await http.get(
         Uri.parse('$baseUrl/users/me'),
         headers: {
@@ -18,16 +21,24 @@ class UserService {
         },
       );
 
+      print('Get current user response status: ${response.statusCode}');
+      print('Response body: ${response.body}');
+
       if (response.statusCode == 200) {
         final responseJson = json.decode(response.body);
-        return User.fromJson(responseJson);
+        final user = User.fromJson(responseJson);
+        print('Successfully loaded user: ${user.username} (ID: ${user.userId})');
+        return user;
+      } else if (response.statusCode == 401 || response.statusCode == 403) {
+        print('Authentication error when fetching current user: ${response.statusCode}');
+        throw Exception('Authentication failed. Please log in again.');
       } else {
         print('Failed to get user profile: ${response.statusCode}');
-        return null;
+        throw Exception('Failed to get user profile: ${response.statusCode}');
       }
     } catch (e) {
       print('Error getting user profile: $e');
-      return null;
+      throw Exception('Error getting user profile: $e');
     }
   }
 

@@ -24,6 +24,7 @@ class _ChatScreenState extends State<ChatScreen> {
   final ScrollController _scrollController = ScrollController();
   bool _isInitialized = false;
   User? _currentUser;
+  String? _error;
 
   @override
   void didChangeDependencies() {
@@ -35,12 +36,121 @@ class _ChatScreenState extends State<ChatScreen> {
   }
 
   Future<void> _loadChat() async {
-    final token = Provider.of<AuthProvider>(context, listen: false).token;
-    _currentUser = Provider.of<UserProvider>(context, listen: false).user;
+    try {
+      setState(() {
+        _error = null; // Clear any previous errors
+      });
+      
+      final authProvider = Provider.of<AuthProvider>(context, listen: false);
+      final userProvider = Provider.of<UserProvider>(context, listen: false);
+      
+      // Validate token and throw exception if invalid
+      String token;
+      try {
+        token = authProvider.validateToken();
+        print('Using valid token starting with: ${token.substring(0, 10)}...');
+      } catch (e) {
+        setState(() {
+          _error = e.toString();
+        });
+        
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(e.toString()),
+            backgroundColor: Colors.red,
+            duration: Duration(seconds: 3),
+          ),
+        );
+        
+        // Navigate back after a short delay
+        Future.delayed(Duration(seconds: 3), () {
+          Navigator.of(context).pop();
+        });
+        
+        return;
+      }
+      
+      // Get current user or load if needed
+      _currentUser = userProvider.user;
+      if (_currentUser == null) {
+        print('Current user is null, attempting to load user data');
+        try {
+          await userProvider.fetchCurrentUser(token);
+          _currentUser = userProvider.user;
+          
+          if (_currentUser == null) {
+            print('Failed to load user data');
+            setState(() {
+              _error = 'Unable to load your profile. Please try again.';
+            });
+            return;
+          } else {
+            print('Successfully loaded user: ${_currentUser!.username} (ID: ${_currentUser!.userId})');
+          }
+        } catch (e) {
+          print('Error loading user data: $e');
+          setState(() {
+            _error = 'Error loading your profile: $e';
+          });
+          return;
+        }
+      } else {
+        print('Using existing user: ${_currentUser!.username} (ID: ${_currentUser!.userId})');
+      }
 
-    if (token != null && _currentUser != null) {
-      await Provider.of<ChatProvider>(context, listen: false)
-          .getChatById(widget.chatId, token);
+      // Now we have both a valid token and user, proceed to load the chat
+      print('Loading chat with ID: ${widget.chatId}');
+      final chatProvider = Provider.of<ChatProvider>(context, listen: false);
+      
+      // Ensure WebSocket is connected
+      final connected = await chatProvider.ensureWebSocketConnected(token, _currentUser!.userId!);
+      if (!connected) {
+        print('Failed to establish WebSocket connection');
+        setState(() {
+          _error = 'Failed to establish connection to chat server';
+        });
+        return;
+      }
+      
+      // Load the chat data
+      try {
+        await chatProvider.getChatById(widget.chatId, token);
+        
+        if (chatProvider.currentChat != null) {
+          print('Chat loaded successfully. Other user: ${chatProvider.currentChat!.otherUser.username}');
+          print('Messages count: ${chatProvider.currentChat!.recentMessages.length}');
+          
+          // Successfully loaded, clear any error
+          setState(() {
+            _error = null;
+          });
+          
+          // Print a sample of messages for debugging
+          if (chatProvider.currentChat!.recentMessages.isNotEmpty) {
+            for (var i = 0; i < chatProvider.currentChat!.recentMessages.length && i < 3; i++) {
+              final msg = chatProvider.currentChat!.recentMessages[i];
+              final fromMe = chatProvider.currentChat!.isMessageFromMe(msg, _currentUser!.userId!);
+              print('Message ${i+1}: ${msg.content} - from me: $fromMe');
+            }
+          }
+        } else {
+          print('Chat is null after loading');
+          setState(() {
+            _error = 'Failed to load chat data';
+          });
+        }
+      } catch (e) {
+        print('Error loading chat: $e');
+        setState(() {
+          _error = 'Error loading chat: $e';
+        });
+      }
+    } catch (e) {
+      // Catch any unexpected errors
+      print('Unexpected error during chat loading: $e');
+      setState(() {
+        _error = 'Unexpected error: $e';
+      });
     }
   }
 
@@ -60,9 +170,23 @@ class _ChatScreenState extends State<ChatScreen> {
     final message = _messageController.text.trim();
     if (message.isEmpty) return;
 
+    final authProvider = Provider.of<AuthProvider>(context, listen: false);
     final chatProvider = Provider.of<ChatProvider>(context, listen: false);
-    final token = Provider.of<AuthProvider>(context, listen: false).token;
+    final token = authProvider.token;
     final currentChat = chatProvider.currentChat;
+
+    // Check if token is valid
+    if (!authProvider.isTokenValid) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('Your session has expired. Please log in again.'),
+          backgroundColor: Colors.red,
+        ),
+      );
+      // Navigate to login screen
+      Navigator.of(context).popUntil((route) => route.isFirst);
+      return;
+    }
 
     if (token != null && currentChat != null && _currentUser != null) {
       _messageController.clear();
@@ -76,7 +200,7 @@ class _ChatScreenState extends State<ChatScreen> {
         senderProfilePicture: _currentUser!.profilePicture,
         receiverId: currentChat.otherUser.userId,
         createdAt: DateTime.now(),
-        read: false,
+        isRead: false,
       );
 
       // Add temporary message to UI
@@ -87,12 +211,34 @@ class _ChatScreenState extends State<ChatScreen> {
       // Scroll to bottom after adding message
       _scrollToBottom();
 
-      // Send actual message to server
-      await chatProvider.sendMessage(
-        currentChat.otherUser.userId,
-        message,
-        token,
-      );
+      try {
+        // Send actual message to server
+        await chatProvider.sendMessage(
+          currentChat.otherUser.userId,
+          message,
+          token,
+        );
+      } catch (e) {
+        // Show error message
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Failed to send message. Please try again.'),
+            backgroundColor: Colors.red,
+          ),
+        );
+        print('Error sending message: $e');
+        
+        // If it's an authorization error, suggest logging in again
+        if (e.toString().contains('403')) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text('Your session may have expired. Try logging in again.'),
+              backgroundColor: Colors.red,
+              duration: Duration(seconds: 5),
+            ),
+          );
+        }
+      }
     }
   }
 
@@ -143,6 +289,31 @@ class _ChatScreenState extends State<ChatScreen> {
           Expanded(
             child: Consumer<ChatProvider>(
               builder: (context, chatProvider, child) {
+                // Show local error if available
+                if (_error != null) {
+                  return Center(
+                    child: Column(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        Text(
+                          'Error loading chat',
+                          style: TextStyle(color: Colors.white),
+                        ),
+                        SizedBox(height: 16),
+                        Text(
+                          _error!,
+                          style: TextStyle(color: Colors.grey),
+                        ),
+                        SizedBox(height: 16),
+                        ElevatedButton(
+                          onPressed: _loadChat,
+                          child: Text('Retry'),
+                        ),
+                      ],
+                    ),
+                  );
+                }
+                
                 if (chatProvider.isLoading) {
                   return const Center(
                     child: CircularProgressIndicator(color: Colors.white),
@@ -214,7 +385,20 @@ class _ChatScreenState extends State<ChatScreen> {
                   itemCount: messages.length,
                   itemBuilder: (context, index) {
                     final message = messages[index];
-                    final isMe = message.senderId == _currentUser?.userId;
+                    
+                    // Explicitly convert IDs to strings before comparison to avoid type issues
+                    final currentUserId = _currentUser?.userId?.toString() ?? '';
+                    final messageSenderId = message.senderId.toString();
+                    
+                    // Compare as strings to avoid integer/long type mismatches
+                    final isMe = currentUserId == messageSenderId;
+                    
+                    // Debug info
+                    print('Message: ${message.content}');
+                    print('Current user ID: $currentUserId (${currentUserId.runtimeType})');
+                    print('Message sender ID: $messageSenderId (${messageSenderId.runtimeType})');
+                    print('Is sent by me: $isMe');
+                    
                     return _buildMessageItem(message, isMe);
                   },
                 );
@@ -228,6 +412,9 @@ class _ChatScreenState extends State<ChatScreen> {
   }
 
   Widget _buildMessageItem(Message message, bool isMe) {
+    // Ensure proper message bubble styling
+    print('Building message item for "${message.content}", isMe = $isMe');
+    
     return Container(
       margin: EdgeInsets.only(
         bottom: 12,
@@ -261,9 +448,9 @@ class _ChatScreenState extends State<ChatScreen> {
                 Padding(
                   padding: const EdgeInsets.only(left: 4),
                   child: Icon(
-                    message.read ? Icons.done_all : Icons.done,
+                    message.isRead ? Icons.done_all : Icons.done,
                     size: 14,
-                    color: message.read ? Colors.blue : Colors.grey,
+                    color: message.isRead ? Colors.blue : Colors.grey,
                   ),
                 ),
             ],

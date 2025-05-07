@@ -82,24 +82,37 @@ class ChatService {
   Future<Message> sendMessage(
       int receiverId, String content, String token) async {
     try {
+      print('Sending HTTP message to receiverId: $receiverId, content: $content');
+      print('Using token: ${token.substring(0, 20)}...');
+      
+      final requestBody = {
+        'receiverId': receiverId,
+        'content': content,
+      };
+      print('Request body: ${json.encode(requestBody)}');
+      
       final response = await http.post(
         Uri.parse('$_baseUrl/api/chats/message'),
         headers: {
           'Authorization': 'Bearer $token',
           'Content-Type': 'application/json',
         },
-        body: json.encode({
-          'receiverId': receiverId,
-          'content': content,
-        }),
+        body: json.encode(requestBody),
       );
+
+      print('Response status code: ${response.statusCode}');
+      print('Response body: ${response.body}');
 
       if (response.statusCode == 200) {
         return Message.fromJson(json.decode(response.body));
+      } else if (response.statusCode == 403) {
+        print('Authorization error - token may be expired or invalid');
+        throw Exception('Failed to send message: ${response.statusCode} - Authorization failed');
       } else {
         throw Exception('Failed to send message: ${response.statusCode}');
       }
     } catch (e) {
+      print('Error sending message: $e');
       throw Exception('Error sending message: $e');
     }
   }

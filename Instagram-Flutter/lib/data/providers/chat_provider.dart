@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'dart:math';
 import 'package:flutter/foundation.dart';
 import '../../models/chat.dart';
 import '../../models/message.dart';
@@ -29,48 +30,76 @@ class ChatProvider extends ChangeNotifier {
   StreamSubscription<Message>? _messageSubscription;
   StreamSubscription<int>? _readReceiptSubscription;
   
+  // Ensure WebSocket is connected with valid token
+  Future<bool> ensureWebSocketConnected(String token, int userId) async {
+    if (!_webSocketService.isConnected) {
+      print('WebSocket not connected. Initializing...');
+      return await initWebSocket(token, userId);
+    }
+    print('WebSocket already connected');
+    return true;
+  }
+  
   // Initialize WebSocket connection
-  Future<void> initWebSocket(String token, int userId) async {
+  Future<bool> initWebSocket(String token, int userId) async {
+    if (token.isEmpty) {
+      print('Cannot initialize WebSocket: Token is empty');
+      return false;
+    }
+    
+    print('Initializing WebSocket with token: ${token.substring(0, min(20, token.length))}...');
+    
     // Dispose previous subscriptions
     _messageSubscription?.cancel();
     _readReceiptSubscription?.cancel();
     
-    // Connect WebSocket
-    _webSocketService.connect(token, userId);
-    
-    // Listen for new messages
-    _messageSubscription = _webSocketService.messageStream.listen((message) {
-      // Add message to current chat if it's from the same chat
-      if (_currentChat != null && 
-          (_currentChat!.otherUser.userId == message.senderId || 
-           _currentChat!.otherUser.userId == message.receiverId)) {
-        _currentChat!.recentMessages.insert(0, message);
-        notifyListeners();
-      }
+    try {
+      // Connect WebSocket
+      _webSocketService.connect(token, userId);
       
-      // Update chat list with new message
-      _updateChatListWithNewMessage(message);
+      // Listen for new messages
+      _messageSubscription = _webSocketService.messageStream.listen((message) {
+        print('Received message from senderId: ${message.senderId}, receiverId: ${message.receiverId}');
+        // Add message to current chat if it's from the same chat
+        if (_currentChat != null && 
+            (_currentChat!.otherUser.userId == message.senderId || 
+             _currentChat!.otherUser.userId == message.receiverId)) {
+          print('Adding message to current chat: ${_currentChat!.chatId}');
+          _currentChat!.recentMessages.insert(0, message);
+          notifyListeners();
+        }
+        
+        // Update chat list with new message
+        _updateChatListWithNewMessage(message);
+        
+        // Increment unread count if message is not read and user is receiver
+        if (!message.isRead && message.receiverId == userId) {
+          _unreadCount++;
+          notifyListeners();
+        }
+      });
       
-      // Increment unread count if message is not read and user is receiver
-      if (!message.read && message.receiverId == userId) {
-        _unreadCount++;
-        notifyListeners();
-      }
-    });
-    
-    // Listen for read receipts
-    _readReceiptSubscription = _webSocketService.readReceiptStream.listen((chatId) {
-      // Update read status for the specified chat
-      if (_currentChat != null && _currentChat!.chatId == chatId) {
-        _currentChat!.recentMessages.forEach((message) {
-          if (!message.read) {
-            // This is a shallow change, in a real app you'd need to create a new message
-            (message as dynamic).read = true;
-          }
-        });
-        notifyListeners();
-      }
-    });
+      // Listen for read receipts
+      _readReceiptSubscription = _webSocketService.readReceiptStream.listen((chatId) {
+        // Update read status for the specified chat
+        if (_currentChat != null && _currentChat!.chatId == chatId) {
+          _currentChat!.recentMessages.forEach((message) {
+            if (!message.isRead) {
+              // Now directly modify the property since it's not final
+              message.isRead = true;
+            }
+          });
+          notifyListeners();
+        }
+      });
+      
+      return true;
+    } catch (e) {
+      print('Error initializing WebSocket: $e');
+      _error = 'Failed to connect to chat service: $e';
+      notifyListeners();
+      return false;
+    }
   }
   
   // Fetch user's chats
@@ -139,6 +168,7 @@ class ChatProvider extends ChangeNotifier {
     try {
       // Try to send message via WebSocket first if connected
       if (_webSocketService.isConnected) {
+        print('Sending message via WebSocket');
         _webSocketService.sendMessage(receiverId, content);
         
         // For WebSockets, we don't immediately get the message back
@@ -146,9 +176,11 @@ class ChatProvider extends ChangeNotifier {
         return null;
       } else {
         // Fallback to HTTP if WebSocket is not connected
+        print('WebSocket not connected, sending via HTTP');
         return await _chatService.sendMessage(receiverId, content, token);
       }
     } catch (e) {
+      print('Error sending message: $e');
       _error = e.toString();
       notifyListeners();
       return null;
@@ -172,9 +204,9 @@ class ChatProvider extends ChangeNotifier {
       if (_currentChat != null && _currentChat!.chatId == chatId) {
         // Mark all messages as read
         for (var i = 0; i < _currentChat!.recentMessages.length; i++) {
-          if (!_currentChat!.recentMessages[i].read) {
-            // This is a shallow change, in a real app you'd need to create a new message
-            (_currentChat!.recentMessages[i] as dynamic).read = true;
+          if (!_currentChat!.recentMessages[i].isRead) {
+            // Now directly modify the property since it's not final
+            _currentChat!.recentMessages[i].isRead = true;
           }
         }
         
@@ -215,7 +247,7 @@ class ChatProvider extends ChangeNotifier {
         lastMessageTime: message.createdAt,
         lastMessageContent: message.content,
         lastMessageSenderId: message.senderId,
-        hasUnreadMessages: message.receiverId == _chats[chatIndex].otherUser.userId ? false : !message.read,
+        hasUnreadMessages: message.receiverId == _chats[chatIndex].otherUser.userId ? false : !message.isRead,
         recentMessages: [message, ..._chats[chatIndex].recentMessages],
       );
       

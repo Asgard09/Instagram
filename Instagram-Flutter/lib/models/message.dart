@@ -6,7 +6,7 @@ class Message {
   final String? senderProfilePicture;
   final int receiverId;
   final DateTime createdAt;
-  final bool read;
+  bool isRead;
 
   Message({
     this.messageId,
@@ -16,10 +16,21 @@ class Message {
     this.senderProfilePicture,
     required this.receiverId,
     required this.createdAt,
-    required this.read,
+    required this.isRead,
   });
 
   factory Message.fromJson(Map<String, dynamic> json) {
+    // Check the shape of the JSON for debugging
+    print('Message JSON: $json');
+    
+    // Handle both read and isRead fields for compatibility
+    bool messageIsRead = false;
+    if (json.containsKey('isRead')) {
+      messageIsRead = json['isRead'] ?? false;
+    } else if (json.containsKey('read')) {
+      messageIsRead = json['read'] ?? false;
+    }
+    
     return Message(
       messageId: json['messageId'],
       content: json['content'],
@@ -28,7 +39,7 @@ class Message {
       senderProfilePicture: json['senderProfilePicture'],
       receiverId: json['receiverId'],
       createdAt: DateTime.parse(json['createdAt']),
-      read: json['read'],
+      isRead: messageIsRead,
     );
   }
 
@@ -41,7 +52,7 @@ class Message {
       'senderProfilePicture': senderProfilePicture,
       'receiverId': receiverId,
       'createdAt': createdAt.toIso8601String(),
-      'read': read,
+      'isRead': isRead,
     };
   }
 } 

@@ -19,6 +19,16 @@ class Chat {
     this.recentMessages = const [],
   });
 
+  // Helper method to determine if a message was sent by the current user
+  bool isMessageFromMe(Message message, int currentUserId) {
+    return message.senderId.toString() == currentUserId.toString();
+  }
+
+  // Helper method to determine if a message was sent by the other user
+  bool isMessageFromOther(Message message, int currentUserId) {
+    return message.senderId.toString() == otherUser.userId.toString();
+  }
+
   factory Chat.fromJson(Map<String, dynamic> json) {
     return Chat(
       chatId: json['chatId'],

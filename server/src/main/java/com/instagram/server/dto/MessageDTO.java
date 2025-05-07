@@ -18,7 +18,7 @@ public class MessageDTO {
     private String senderProfilePicture;
     private Long receiverId;
     private Date createdAt;
-    private boolean read;
+    private boolean isRead;
     
     public static MessageDTO fromEntity(Message message) {
         MessageDTO dto = new MessageDTO();
