@@ -5,6 +5,8 @@ import 'dart:typed_data';
 import 'package:provider/provider.dart';
 
 import '../data/providers/auth_provider.dart';
+import '../data/providers/user_provider.dart';
+import '../services/user_service.dart';
 
 // Model class for user who liked
 class LikeUser {
@@ -42,7 +44,6 @@ class LikeListPopup extends StatefulWidget {
 }
 
 class _LikeListPopupState extends State<LikeListPopup> {
-  final LikeService _likeService = LikeService();
   List<LikeUser> _likes = [];
   bool _isLoading = true;
   bool _hasError = false;
@@ -67,7 +68,7 @@ class _LikeListPopupState extends State<LikeListPopup> {
     try {
       final token = Provider.of<AuthProvider>(context, listen: false).token;
       final response = await http.get(
-        Uri.parse('http://192.168.1.3:8080/api/likes/users/post/${widget.postId}'),
+        Uri.parse('http://192.168.1.6:8080/api/likes/users/post/${widget.postId}'),
         headers: {
           'Authorization': 'Bearer $token',
           'Content-Type': 'application/json',
@@ -178,7 +179,7 @@ class _LikeListPopupState extends State<LikeListPopup> {
                     final user = _likes[index];
                     return LikeTile(
                       user: user,
-                      serverBaseUrl: 'http://192.168.1.3:8080',
+                      serverBaseUrl: 'http://192.168.1.6:8080',
                     );
                   },
                 ),
@@ -191,7 +192,7 @@ class _LikeListPopupState extends State<LikeListPopup> {
   }
 }
 
-class LikeTile extends StatelessWidget {
+class LikeTile extends StatefulWidget {
   final LikeUser user;
   final String serverBaseUrl;
 
@@ -202,7 +203,130 @@ class LikeTile extends StatelessWidget {
   }) : super(key: key);
 
   @override
+  State<LikeTile> createState() => _LikeTileState();
+}
+
+class _LikeTileState extends State<LikeTile> {
+  bool isFollowing = false;
+  bool isProcessing = false;
+  int? currentUserId;
+
+  @override
+  void initState() {
+    super.initState();
+    _getCurrentUser();
+    _checkFollowStatus();
+  }
+
+  Future<void> _getCurrentUser() async {
+    try {
+      final token = Provider.of<AuthProvider>(context, listen: false).token;
+      if (token == null || token.isEmpty) {
+        print('Token is empty or null');
+        return;
+      }
+
+      // Use the UserService to get the current user data
+      final userService = UserService();
+      final currentUser = await userService.getCurrentUser(token);
+
+      if (currentUser != null && currentUser.userId != null) {
+        setState(() {
+          currentUserId = currentUser.userId;
+        });
+        print('Fetched current user ID: $currentUserId');
+      } else {
+        print('Failed to get current user or user ID is null');
+      }
+    } catch (e) {
+      print('Error getting current user ID: $e');
+    }
+  }
+
+  Future<void> _checkFollowStatus() async {
+    try {
+      final token = Provider.of<AuthProvider>(context, listen: false).token;
+      final response = await http.get(
+        Uri.parse('${widget.serverBaseUrl}/api/follows/check/${widget.user.userId}'),
+        headers: {
+          'Authorization': 'Bearer $token',
+          'Content-Type': 'application/json',
+        },
+      );
+
+      if (response.statusCode == 200) {
+        final followData = json.decode(response.body);
+        setState(() {
+          isFollowing = followData['following'] ?? false;
+        });
+      }
+    } catch (e) {
+      print('Error checking follow status: $e');
+    }
+  }
+
+  Future<void> _toggleFollow() async {
+    if (isProcessing) return;
+
+    setState(() {
+      isProcessing = true;
+    });
+
+    try {
+      final token = Provider.of<AuthProvider>(context, listen: false).token;
+      final previousFollowState = isFollowing;
+
+      setState(() {
+        isFollowing = !isFollowing;
+      });
+
+      final response = await http.post(
+        Uri.parse('${widget.serverBaseUrl}/api/follows/${widget.user.userId}'),
+        headers: {
+          'Authorization': 'Bearer $token',
+          'Content-Type': 'application/json',
+        },
+      );
+
+      if (response.statusCode == 200) {
+        final data = json.decode(response.body);
+        setState(() {
+          isFollowing = data['status'] == 'followed';
+        });
+      } else {
+        setState(() {
+          isFollowing = previousFollowState;
+        });
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Failed to ${isFollowing ? 'unfollow' : 'follow'} user'),
+            backgroundColor: Colors.red,
+          ),
+        );
+      }
+    } catch (e) {
+      setState(() {
+        isFollowing = !isFollowing; // Revert back on error
+      });
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('Error: $e'),
+          backgroundColor: Colors.red,
+        ),
+      );
+    } finally {
+      setState(() {
+        isProcessing = false;
+      });
+    }
+  }
+
+  @override
   Widget build(BuildContext context) {
+    // Check if this is the current user by comparing IDs
+    final isCurrentUser = currentUserId != null &&
+        widget.user.userId.toString() == currentUserId.toString();
+
     return Container(
       padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 16),
       decoration: BoxDecoration(
@@ -215,8 +339,8 @@ class LikeTile extends StatelessWidget {
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          user.profilePicture != null
-              ? _buildAvatar(user.profilePicture!)
+          widget.user.profilePicture != null
+              ? _buildAvatar(widget.user.profilePicture!)
               : const CircleAvatar(
             radius: 18,
             backgroundColor: Colors.grey,
@@ -228,16 +352,55 @@ class LikeTile extends StatelessWidget {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(
-                  user.username,
+                  widget.user.username,
                   style: const TextStyle(
                     color: Colors.white,
                     fontWeight: FontWeight.bold,
                     fontSize: 14,
                   ),
                 ),
+                if (isCurrentUser)
+                  const Text(
+                    'Personal',
+                    style: TextStyle(
+                      color: Colors.grey,
+                      fontSize: 12,
+                    ),
+                  ),
               ],
             ),
           ),
+          if (!isCurrentUser)
+            SizedBox(
+              width: 90,
+              child: ElevatedButton(
+                onPressed: isProcessing ? null : _toggleFollow,
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: isFollowing ? Colors.grey[800] : Colors.blue,
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(6),
+                  ),
+                  padding: const EdgeInsets.symmetric(vertical: 8),
+                ),
+                child: isProcessing
+                    ? const SizedBox(
+                  height: 16,
+                  width: 16,
+                  child: CircularProgressIndicator(
+                    strokeWidth: 2,
+                    valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
+                  ),
+                )
+                    : Text(
+                  isFollowing ? 'Following' : 'Follow',
+                  style: const TextStyle(
+                    color: Colors.white,
+                    fontSize: 12,
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
+              ),
+            ),
         ],
       ),
     );
@@ -262,7 +425,7 @@ class LikeTile extends StatelessWidget {
 
     String imageUrl = profilePicture;
     if (!imageUrl.startsWith('http')) {
-      imageUrl = '$serverBaseUrl/uploads/$imageUrl';
+      imageUrl = '${widget.serverBaseUrl}/uploads/$imageUrl';
     }
     return CircleAvatar(
       radius: 18,
@@ -270,25 +433,5 @@ class LikeTile extends StatelessWidget {
       backgroundColor: Colors.grey,
       onBackgroundImageError: (_, __) => const Icon(Icons.person, color: Colors.white),
     );
-  }
-}
-
-class LikeService {
-  static const String baseUrl = 'http://192.168.1.3:8080';
-
-  Future<List<LikeUser>> getUsersWhoLikedPost(int postId) async {
-    try {
-      final response = await http.get(
-        Uri.parse('$baseUrl/api/likes/users/post/$postId'),
-      );
-      if (response.statusCode == 200) {
-        List<dynamic> data = json.decode(response.body);
-        return data.map((user) => LikeUser.fromJson(user)).toList();
-      } else {
-        throw Exception('Failed to load likes: HTTP ${response.statusCode} - ${response.body}');
-      }
-    } catch (e) {
-      throw Exception('Failed to load likes: $e');
-    }
   }
 }

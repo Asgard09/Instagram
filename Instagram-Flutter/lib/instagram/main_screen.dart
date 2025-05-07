@@ -7,14 +7,25 @@ import 'package:practice_widgets/instagram/search_screen.dart';
 import 'home_screen.dart';
 
 class MainScreen extends StatefulWidget {
-  const MainScreen({Key? key}) : super(key: key);
+  final int initialTabIndex;
+
+  const MainScreen({
+    Key? key,
+    this.initialTabIndex = 0,
+  }) : super(key: key);
 
   @override
   State<MainScreen> createState() => _MainScreenState();
 }
 
 class _MainScreenState extends State<MainScreen> {
-  int _currentIndex = 0;
+  late int _currentIndex;
+
+  @override
+  void initState() {
+    super.initState();
+    _currentIndex = widget.initialTabIndex;
+  }
   final List<Widget> _screens = [
     const HomeScreen(),
     const Scaffold(body: Center(child: Text('Search', style: TextStyle(color: Colors.white)))),
@@ -48,6 +59,13 @@ class _MainScreenState extends State<MainScreen> {
       context,
       MaterialPageRoute(builder: (context) => const NewPostScreen()),
     );
+  }
+  void switchToTab(int index) {
+    if (mounted) {
+      setState(() {
+        _currentIndex = index;
+      });
+    }
   }
 
   @override
