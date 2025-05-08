@@ -158,7 +158,7 @@ class _ChatScreenState extends State<ChatScreen> {
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (_scrollController.hasClients) {
         _scrollController.animateTo(
-          0,
+          _scrollController.position.maxScrollExtent,
           duration: const Duration(milliseconds: 300),
           curve: Curves.easeOut,
         );
@@ -204,7 +204,7 @@ class _ChatScreenState extends State<ChatScreen> {
       );
 
       // Add temporary message to UI
-      currentChat.recentMessages.insert(0, tempMessage);
+      currentChat.recentMessages.add(tempMessage);
       // Force rebuild
       setState(() {});
 
@@ -380,7 +380,7 @@ class _ChatScreenState extends State<ChatScreen> {
 
                 return ListView.builder(
                   controller: _scrollController,
-                  reverse: true,
+                  reverse: false,
                   padding: const EdgeInsets.all(16),
                   itemCount: messages.length,
                   itemBuilder: (context, index) {
@@ -431,18 +431,23 @@ class _ChatScreenState extends State<ChatScreen> {
               color: isMe ? Colors.blue : Colors.grey[800],
               borderRadius: BorderRadius.circular(16),
             ),
-            child: Text(
-              message.content,
-              style: const TextStyle(color: Colors.white),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  message.content,
+                  style: const TextStyle(color: Colors.white),
+                ),
+              ],
             ),
           ),
           const SizedBox(height: 4),
           Row(
             mainAxisSize: MainAxisSize.min,
-                  children: [
-                    Text(
+            children: [
+              Text(
                 _formatTime(message.createdAt),
-                style: TextStyle(color: Colors.grey, fontSize: 12),
+                style: TextStyle(color: Colors.grey[400], fontSize: 11),
               ),
               if (isMe)
                 Padding(
@@ -507,18 +512,41 @@ class _ChatScreenState extends State<ChatScreen> {
     final now = DateTime.now();
     final difference = now.difference(localTime);
     
-    if (difference.inDays > 0) {
-      return '${localTime.day}/${localTime.month} ${localTime.hour}:${localTime.minute.toString().padLeft(2, '0')}';
-    } else {
-      return '${localTime.hour}:${localTime.minute.toString().padLeft(2, '0')}';
+    // Format the time part
+    final hour = localTime.hour.toString().padLeft(2, '0');
+    final minute = localTime.minute.toString().padLeft(2, '0');
+    final timeString = '$hour:$minute';
+    
+    // Today - show only time
+    if (difference.inDays == 0 && now.day == localTime.day) {
+      return timeString;
     }
+    
+    // Yesterday - show "Yesterday, HH:MM"
+    if (difference.inDays == 1 || (difference.inHours >= 12 && now.day == localTime.day + 1)) {
+      return 'Yesterday, $timeString';
+    }
+    
+    // This week (within 7 days) - show day name, HH:MM
+    if (difference.inDays < 7) {
+      final dayNames = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday'];
+      final dayName = dayNames[localTime.weekday - 1];
+      return '$dayName, $timeString';
+    }
+    
+    // Older - show full date
+    final day = localTime.day.toString().padLeft(2, '0');
+    final month = localTime.month.toString().padLeft(2, '0');
+    final year = localTime.year;
+    
+    return '$day/$month/$year, $timeString';
   }
   
   String _getProfileImageUrl(String profilePicture) {
     if (profilePicture.startsWith('http')) {
       return profilePicture;
     } else {
-      final baseUrl = 'http://192.168.1.5:8080';
+      final baseUrl = 'http://192.168.100.23:8080';
       return '$baseUrl/uploads/$profilePicture';
     }
   }

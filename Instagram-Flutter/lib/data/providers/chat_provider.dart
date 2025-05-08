@@ -65,7 +65,7 @@ class ChatProvider extends ChangeNotifier {
             (_currentChat!.otherUser.userId == message.senderId || 
              _currentChat!.otherUser.userId == message.receiverId)) {
           print('Adding message to current chat: ${_currentChat!.chatId}');
-          _currentChat!.recentMessages.insert(0, message);
+          _currentChat!.recentMessages.add(message);
           notifyListeners();
         }
         
@@ -241,6 +241,9 @@ class ChatProvider extends ChangeNotifier {
     
     if (chatIndex >= 0) {
       // Chat exists, update it
+      final List<Message> updatedMessages = List.from(_chats[chatIndex].recentMessages);
+      updatedMessages.add(message);
+      
       final updatedChat = Chat(
         chatId: _chats[chatIndex].chatId,
         otherUser: _chats[chatIndex].otherUser,
@@ -248,7 +251,7 @@ class ChatProvider extends ChangeNotifier {
         lastMessageContent: message.content,
         lastMessageSenderId: message.senderId,
         hasUnreadMessages: message.receiverId == _chats[chatIndex].otherUser.userId ? false : !message.isRead,
-        recentMessages: [message, ..._chats[chatIndex].recentMessages],
+        recentMessages: updatedMessages,
       );
       
       // Move this chat to the top of the list
