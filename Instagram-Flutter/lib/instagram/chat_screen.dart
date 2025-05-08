@@ -199,7 +199,7 @@ class _ChatScreenState extends State<ChatScreen> {
         senderUsername: _currentUser!.username,
         senderProfilePicture: _currentUser!.profilePicture,
         receiverId: currentChat.otherUser.userId,
-        createdAt: DateTime.now(),
+        createdAt: DateTime.now().toUtc(),
         isRead: false,
       );
 
@@ -294,7 +294,7 @@ class _ChatScreenState extends State<ChatScreen> {
                   return Center(
                     child: Column(
                       mainAxisAlignment: MainAxisAlignment.center,
-                      children: [
+                children: [
                         Text(
                           'Error loading chat',
                           style: TextStyle(color: Colors.white),
@@ -330,17 +330,17 @@ class _ChatScreenState extends State<ChatScreen> {
                           style: TextStyle(color: Colors.white),
                         ),
                         SizedBox(height: 16),
-                        Text(
+                    Text(
                           chatProvider.error!,
                           style: TextStyle(color: Colors.grey),
-                        ),
+                    ),
                         SizedBox(height: 16),
                         ElevatedButton(
                           onPressed: _loadChat,
                           child: Text('Retry'),
-                        ),
-                      ],
-                    ),
+                ),
+              ],
+            ),
                   );
                 }
 
@@ -367,12 +367,12 @@ class _ChatScreenState extends State<ChatScreen> {
                           style: TextStyle(color: Colors.white, fontSize: 18),
                         ),
                         SizedBox(height: 8),
-                        Text(
+                Text(
                           'Send a message to start the conversation',
                           style: TextStyle(color: Colors.grey),
-                        ),
-                      ],
-                    ),
+                ),
+              ],
+            ),
                   );
                 }
 
@@ -439,8 +439,8 @@ class _ChatScreenState extends State<ChatScreen> {
           const SizedBox(height: 4),
           Row(
             mainAxisSize: MainAxisSize.min,
-            children: [
-              Text(
+                  children: [
+                    Text(
                 _formatTime(message.createdAt),
                 style: TextStyle(color: Colors.grey, fontSize: 12),
               ),
@@ -474,8 +474,8 @@ class _ChatScreenState extends State<ChatScreen> {
           ),
           Expanded(
             child: Container(
-              padding: const EdgeInsets.symmetric(horizontal: 16),
-              decoration: BoxDecoration(
+            padding: const EdgeInsets.symmetric(horizontal: 16),
+            decoration: BoxDecoration(
                 color: Colors.grey[800],
                 borderRadius: BorderRadius.circular(24),
               ),
@@ -502,13 +502,15 @@ class _ChatScreenState extends State<ChatScreen> {
   }
 
   String _formatTime(DateTime time) {
+    // Convert the UTC time from server to local time zone
+    final localTime = time.toLocal();
     final now = DateTime.now();
-    final difference = now.difference(time);
+    final difference = now.difference(localTime);
     
     if (difference.inDays > 0) {
-      return '${time.day}/${time.month} ${time.hour}:${time.minute.toString().padLeft(2, '0')}';
+      return '${localTime.day}/${localTime.month} ${localTime.hour}:${localTime.minute.toString().padLeft(2, '0')}';
     } else {
-      return '${time.hour}:${time.minute.toString().padLeft(2, '0')}';
+      return '${localTime.hour}:${localTime.minute.toString().padLeft(2, '0')}';
     }
   }
   

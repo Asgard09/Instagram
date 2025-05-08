@@ -79,6 +79,17 @@ class WebSocketService {
                     messageJson['isRead'] = messageJson['read'];
                   }
                   
+                  // Ensure createdAt is properly handled as UTC
+                  if (messageJson.containsKey('createdAt') && messageJson['createdAt'] != null) {
+                    try {
+                      // Parse the date and ensure it's treated as UTC
+                      DateTime parsedDate = DateTime.parse(messageJson['createdAt']);
+                      messageJson['createdAt'] = parsedDate.toUtc().toIso8601String();
+                    } catch (e) {
+                      print('Error parsing date: $e');
+                    }
+                  }
+                  
                   final message = Message.fromJson(messageJson);
                   print('Created message object with senderId: ${message.senderId}, receiverId: ${message.receiverId}');
                   _messageController.add(message);
@@ -163,6 +174,7 @@ class WebSocketService {
     final message = {
       'receiverId': receiverId,
       'content': content,
+      'timestamp': DateTime.now().toUtc().toIso8601String(), // Include UTC timestamp
     };
 
     print('Sending message via WebSocket to user $receiverId: $content');

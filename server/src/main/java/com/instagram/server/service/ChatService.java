@@ -124,7 +124,10 @@ public class ChatService {
         message.setContent(content);
         message.setSender(sender);
         message.setReceiver(receiver);
-        message.setCreatedAt(new Date());
+        
+        // Use UTC timestamp for consistent time zone handling
+        Date now = new Date();
+        message.setCreatedAt(now);
         message.setRead(false);
         
         // Save message
@@ -132,7 +135,7 @@ public class ChatService {
         
         // Add message to chat
         chat.getMessages().add(0, message); // Add at beginning for most recent first
-        chat.setUpdatedAt(new Date());
+        chat.setUpdatedAt(now);
         chatRepository.save(chat);
         
         // Convert to DTO

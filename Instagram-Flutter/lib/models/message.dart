@@ -31,6 +31,9 @@ class Message {
       messageIsRead = json['read'] ?? false;
     }
     
+    // Parse the date and convert to UTC for consistent handling
+    DateTime createdAt = DateTime.parse(json['createdAt']).toUtc();
+    
     return Message(
       messageId: json['messageId'],
       content: json['content'],
@@ -38,7 +41,7 @@ class Message {
       senderUsername: json['senderUsername'],
       senderProfilePicture: json['senderProfilePicture'],
       receiverId: json['receiverId'],
-      createdAt: DateTime.parse(json['createdAt']),
+      createdAt: createdAt,
       isRead: messageIsRead,
     );
   }

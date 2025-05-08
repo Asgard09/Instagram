@@ -34,7 +34,7 @@ class Chat {
       chatId: json['chatId'],
       otherUser: UserSummary.fromJson(json['otherUser']),
       lastMessageTime: json['lastMessageTime'] != null
-          ? DateTime.parse(json['lastMessageTime'])
+          ? DateTime.parse(json['lastMessageTime']).toUtc()
           : null,
       lastMessageContent: json['lastMessageContent'],
       lastMessageSenderId: json['lastMessageSenderId'],

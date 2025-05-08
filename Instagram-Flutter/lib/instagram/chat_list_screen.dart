@@ -208,13 +208,15 @@ class _ChatListScreenState extends State<ChatListScreen> {
   }
   
   String _formatTime(DateTime time) {
+    // Convert to local time zone for display
+    final localTime = time.toLocal();
     final now = DateTime.now();
-    final difference = now.difference(time);
+    final difference = now.difference(localTime);
     
     if (difference.inDays > 7) {
-      return '${time.day}/${time.month}/${time.year}';
+      return '${localTime.day}/${localTime.month}/${localTime.year}';
     } else {
-      return timeago.format(time, locale: 'en_short');
+      return timeago.format(localTime, locale: 'en_short');
     }
   }
   
