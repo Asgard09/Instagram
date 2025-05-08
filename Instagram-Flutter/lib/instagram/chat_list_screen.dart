@@ -5,6 +5,7 @@ import '../data/providers/auth_provider.dart';
 import '../data/providers/chat_provider.dart';
 import '../data/providers/user_provider.dart';
 import '../models/chat.dart';
+import '../models/message.dart';
 import 'chat_screen.dart';
 
 class ChatListScreen extends StatefulWidget {
@@ -132,6 +133,28 @@ class _ChatListScreenState extends State<ChatListScreen> {
   Widget _buildChatItem(BuildContext context, Chat chat) {
     final currentUser = Provider.of<UserProvider>(context, listen: false).user;
     
+    // Get the earliest message if available
+    String messageContent = 'Start a conversation';
+    int? messageSenderId;
+    DateTime? messageTime;
+    
+    if (chat.recentMessages.isNotEmpty) {
+      // Sort messages by time (oldest first)
+      final sortedMessages = List<Message>.from(chat.recentMessages)
+        ..sort((a, b) => a.createdAt.compareTo(b.createdAt));
+      
+      // Get earliest message
+      final earliestMessage = sortedMessages.first;
+      messageContent = earliestMessage.content;
+      messageSenderId = earliestMessage.senderId;
+      messageTime = earliestMessage.createdAt;
+    } else if (chat.lastMessageContent != null) {
+      // Fallback to lastMessageContent if available
+      messageContent = chat.lastMessageContent!;
+      messageSenderId = chat.lastMessageSenderId;
+      messageTime = chat.lastMessageTime;
+    }
+    
     return ListTile(
       onTap: () {
         Navigator.push(
@@ -159,7 +182,7 @@ class _ChatListScreenState extends State<ChatListScreen> {
       ),
       subtitle: Row(
         children: [
-          if (chat.lastMessageSenderId == currentUser?.userId)
+          if (messageSenderId == currentUser?.userId)
             Text(
               'You: ',
               style: TextStyle(
@@ -169,7 +192,7 @@ class _ChatListScreenState extends State<ChatListScreen> {
             ),
           Expanded(
             child: Text(
-              chat.lastMessageContent ?? 'Start a conversation',
+              messageContent,
               style: TextStyle(
                 color: chat.hasUnreadMessages ? Colors.white : Colors.grey,
                 fontWeight: chat.hasUnreadMessages ? FontWeight.bold : FontWeight.normal,
@@ -184,9 +207,9 @@ class _ChatListScreenState extends State<ChatListScreen> {
         mainAxisAlignment: MainAxisAlignment.center,
         crossAxisAlignment: CrossAxisAlignment.end,
         children: [
-          if (chat.lastMessageTime != null)
+          if (messageTime != null)
             Text(
-              _formatTime(chat.lastMessageTime!),
+              _formatTime(messageTime),
               style: TextStyle(
                 color: chat.hasUnreadMessages ? Colors.blue : Colors.grey,
                 fontSize: 12,
