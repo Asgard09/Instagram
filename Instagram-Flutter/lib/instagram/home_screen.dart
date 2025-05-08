@@ -13,6 +13,7 @@ import '../widgets/popup_listlike.dart';
 import 'main_screen.dart';
 import 'user_profile_screen.dart';
 import 'profile_screen.dart'; // Import ProfileScreen
+import 'chat_list_screen.dart'; // Import ChatListScreen
 import '../data/providers/likes_provider.dart';
 import '../services/user_service.dart'; // Added for user service to get current user
 
@@ -28,10 +29,10 @@ class _HomeScreenState extends State<HomeScreen> {
   String get serverBaseUrl {
     if (kIsWeb) {
       // Use the specific IP for web
-      return 'http://192.168.1.5:8080';
+      return 'http://192.168.100.23:8080';
     } else {
       // For mobile platforms
-      return 'http://192.168.1.5:8080';
+      return 'http://192.168.100.23:8080';
     }
   }
 
@@ -76,7 +77,14 @@ class _HomeScreenState extends State<HomeScreen> {
           ),
           IconButton(
             icon: const Icon(Icons.chat_bubble_outline, color: Colors.white),
-            onPressed: () {},
+            onPressed: () {
+              Navigator.push(
+                context,
+                MaterialPageRoute(
+                  builder: (context) => const ChatListScreen(),
+                ),
+              );
+            },
           ),
         ],
       ),

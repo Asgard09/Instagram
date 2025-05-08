@@ -1,5 +1,6 @@
 import 'dart:async';
 import 'dart:convert';
+import 'dart:math';
 import 'package:flutter/foundation.dart';
 import 'package:stomp_dart_client/stomp.dart';
 import 'package:stomp_dart_client/stomp_config.dart';
@@ -10,9 +11,18 @@ class WebSocketService {
   // Server base URL
   String get _baseUrl {
     if (kIsWeb) {
-      return 'ws://192.168.1.5:8080';
+      return 'http://192.168.100.23:8080';
     } else {
-      return 'ws://192.168.1.5:8080';
+      return 'http://192.168.100.23:8080';
+    }
+  }
+  
+  // WebSocket URL
+  String get _webSocketUrl {
+    if (kIsWeb) {
+      return 'ws://192.168.100.23:8080/ws/websocket';
+    } else {
+      return 'ws://192.168.100.23:8080/ws/websocket';
     }
   }
 
@@ -53,94 +63,107 @@ class WebSocketService {
       }
     }
     
-    print('Connecting to WebSocket at $_baseUrl with user $userId');
+    print('Connecting to WebSocket at $_webSocketUrl with user $userId');
+    print('Using token: ${token.substring(0, min(20, token.length))}...');
 
-    _stompClient = StompClient(
-      config: StompConfig(
-        url: '$_baseUrl/ws',
-        onConnect: (StompFrame frame) {
-          print('Connected to WebSocket successfully');
-          _connected = true;
-          _reconnectAttempts = 0;
-          
-          // Subscribe to personal queue for new messages
-          _stompClient!.subscribe(
-            destination: '/user/$userId/queue/messages',
-            callback: (frame) {
-              if (frame.body != null) {
-                print('Received WebSocket message: ${frame.body}');
-                try {
-                  final messageJson = json.decode(frame.body!);
-                  print('Decoded JSON: $messageJson');
-                  
-                  // Check for read/isRead field discrepancy
-                  if (messageJson.containsKey('read') && !messageJson.containsKey('isRead')) {
-                    print('Converting "read" field to "isRead"');
-                    messageJson['isRead'] = messageJson['read'];
-                  }
-                  
-                  // Ensure createdAt is properly handled as UTC
-                  if (messageJson.containsKey('createdAt') && messageJson['createdAt'] != null) {
-                    try {
-                      // Parse the date and ensure it's treated as UTC
-                      DateTime parsedDate = DateTime.parse(messageJson['createdAt']);
-                      messageJson['createdAt'] = parsedDate.toUtc().toIso8601String();
-                    } catch (e) {
-                      print('Error parsing date: $e');
-                    }
-                  }
-                  
-                  final message = Message.fromJson(messageJson);
-                  print('Created message object with senderId: ${message.senderId}, receiverId: ${message.receiverId}');
-                  _messageController.add(message);
-                } catch (e) {
-                  print('Error processing WebSocket message: $e');
-                }
-              }
-            },
-          );
-          
-          // Subscribe to read receipts
-          _stompClient!.subscribe(
-            destination: '/user/$userId/queue/read-receipts',
-            callback: (frame) {
-              if (frame.body != null) {
-                final chatId = int.parse(frame.body!);
-                _readReceiptController.add(chatId);
-              }
-            },
-          );
-        },
-        onWebSocketError: (dynamic error) {
-          print('WebSocket error: $error');
-          _connected = false;
-          _scheduleReconnect();
-        },
-        onDisconnect: (frame) {
-          print('Disconnected from WebSocket');
-          _connected = false;
-          _scheduleReconnect();
-        },
-        onStompError: (frame) {
-          print('STOMP error: ${frame.body}');
-          _connected = false;
-          _scheduleReconnect();
-        },
-        // Add authentication headers
-        stompConnectHeaders: {
-          'Authorization': 'Bearer $token',
-        },
-        webSocketConnectHeaders: {
-          'Authorization': 'Bearer $token',
-        },
-      ),
-    );
-
-    // Activate client
     try {
+      _stompClient = StompClient(
+        config: StompConfig(
+          url: _webSocketUrl,
+          onConnect: (StompFrame frame) {
+            print('Connected to WebSocket successfully');
+            _connected = true;
+            _reconnectAttempts = 0;
+            
+            // Subscribe to personal queue for new messages
+            _stompClient!.subscribe(
+              destination: '/user/$userId/queue/messages',
+              callback: (frame) {
+                if (frame.body != null) {
+                  print('Received WebSocket message: ${frame.body}');
+                  try {
+                    final messageJson = json.decode(frame.body!);
+                    print('Decoded JSON: $messageJson');
+                    
+                    // Check for read/isRead field discrepancy
+                    if (messageJson.containsKey('read') && !messageJson.containsKey('isRead')) {
+                      print('Converting "read" field to "isRead"');
+                      messageJson['isRead'] = messageJson['read'];
+                    }
+                    
+                    // Ensure createdAt is properly handled as UTC
+                    if (messageJson.containsKey('createdAt') && messageJson['createdAt'] != null) {
+                      try {
+                        // Parse the date and ensure it's treated as UTC
+                        DateTime parsedDate = DateTime.parse(messageJson['createdAt']);
+                        messageJson['createdAt'] = parsedDate.toUtc().toIso8601String();
+                      } catch (e) {
+                        print('Error parsing date: $e');
+                      }
+                    }
+                    
+                    final message = Message.fromJson(messageJson);
+                    print('Created message object with senderId: ${message.senderId}, receiverId: ${message.receiverId}');
+                    _messageController.add(message);
+                  } catch (e) {
+                    print('Error processing WebSocket message: $e');
+                  }
+                }
+              },
+            );
+            
+            // Subscribe to read receipts
+            _stompClient!.subscribe(
+              destination: '/user/$userId/queue/read-receipts',
+              callback: (frame) {
+                if (frame.body != null) {
+                  final chatId = int.parse(frame.body!);
+                  _readReceiptController.add(chatId);
+                }
+              },
+            );
+          },
+          onWebSocketError: (dynamic error) {
+            print('WebSocket error: $error');
+            if (error is Map<String, dynamic>) {
+              print('WebSocket error details: ${json.encode(error)}');
+            } else if (error is String) {
+              print('WebSocket error message: $error');
+            } else {
+              print('WebSocket error type: ${error.runtimeType}');
+              try {
+                print('WebSocket error toString: ${error.toString()}');
+              } catch (e) {
+                print('Could not convert error to string: $e');
+              }
+            }
+            _connected = false;
+            _scheduleReconnect();
+          },
+          onDisconnect: (frame) {
+            print('Disconnected from WebSocket');
+            _connected = false;
+            _scheduleReconnect();
+          },
+          onStompError: (frame) {
+            print('STOMP error: ${frame.body}');
+            _connected = false;
+            _scheduleReconnect();
+          },
+          // Add authentication headers
+          stompConnectHeaders: {
+            'Authorization': 'Bearer $token',
+          },
+          webSocketConnectHeaders: {
+            'Authorization': 'Bearer $token',
+          },
+        ),
+      );
+
+      // Activate client
       _stompClient!.activate();
     } catch (e) {
-      print('Error activating STOMP client: $e');
+      print('Error creating or activating STOMP client: $e');
       _connected = false;
       _scheduleReconnect();
     }
