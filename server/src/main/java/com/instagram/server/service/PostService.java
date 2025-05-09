@@ -57,6 +57,11 @@ public class PostService {
         }
         post.setImageUrls(imageUrls);
 
+        // Save tagged people if provided
+        if (request.getTaggedPeople() != null && !request.getTaggedPeople().isEmpty()) {
+            post.setTaggedPeople(request.getTaggedPeople());
+        }
+
         // Save post
         return postRepository.save(post);
     }
