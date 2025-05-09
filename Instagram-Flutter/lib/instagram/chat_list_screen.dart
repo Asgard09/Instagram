@@ -16,33 +16,75 @@ class ChatListScreen extends StatefulWidget {
 }
 
 class _ChatListScreenState extends State<ChatListScreen> {
-  bool _isInitialized = false;
+  bool _isInitializing = false;
+
+  @override
+  void initState() {
+    super.initState();
+    // Schedule initialization after the first frame is rendered
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      _initializeChats();
+    });
+  }
 
   @override
   void didChangeDependencies() {
     super.didChangeDependencies();
-    if (!_isInitialized) {
+    // Refresh when screen is revisited
+    if (!_isInitializing) {
       _initializeChats();
-      _isInitialized = true;
     }
   }
 
   Future<void> _initializeChats() async {
-    final token = Provider.of<AuthProvider>(context, listen: false).token;
-    final currentUser = Provider.of<UserProvider>(context, listen: false).user;
+    setState(() {
+      _isInitializing = true;
+    });
 
-    if (token != null && currentUser != null) {
-      final chatProvider = Provider.of<ChatProvider>(context, listen: false);
+    final token = Provider.of<AuthProvider>(context, listen: false).token;
+    final userProvider = Provider.of<UserProvider>(context, listen: false);
+    final currentUser = userProvider.user;
+
+    if (token != null) {
+      // If user is not loaded yet, try to fetch it first
+      if (currentUser == null || currentUser.userId == null) {
+        try {
+          print("User not loaded, attempting to fetch user data first");
+          await userProvider.fetchCurrentUser(token);
+        } catch (e) {
+          print("Error fetching user: $e");
+        }
+      }
+
+      // Now try again with the (hopefully) loaded user
+      final updatedUser = Provider.of<UserProvider>(context, listen: false).user;
       
-      // Initialize WebSocket connection
-      await chatProvider.initWebSocket(token, currentUser.userId!);
-      
-      // Fetch chats
-      await chatProvider.fetchUserChats(token);
-      
-      // Fetch unread message count
-      await chatProvider.fetchUnreadMessageCount(token);
+      if (updatedUser != null && updatedUser.userId != null) {
+        print("Initializing chat with user ID: ${updatedUser.userId}");
+        final chatProvider = Provider.of<ChatProvider>(context, listen: false);
+        
+        try {
+          // Initialize WebSocket connection
+          await chatProvider.initWebSocket(token, updatedUser.userId!);
+          
+          // Fetch chats
+          await chatProvider.fetchUserChats(token);
+          
+          // Fetch unread message count
+          await chatProvider.fetchUnreadMessageCount(token);
+        } catch (e) {
+          print("Error initializing chat: $e");
+        }
+      } else {
+        print("User data is still not available after fetch attempt");
+      }
+    } else {
+      print("Token is null, cannot initialize chats");
     }
+
+    setState(() {
+      _isInitializing = false;
+    });
   }
 
   @override
@@ -62,11 +104,45 @@ class _ChatListScreenState extends State<ChatListScreen> {
           ),
         ],
       ),
-      body: Consumer<ChatProvider>(
-        builder: (context, chatProvider, child) {
-          if (chatProvider.isLoading) {
+      body: Consumer2<ChatProvider, UserProvider>(
+        builder: (context, chatProvider, userProvider, child) {
+          final currentUser = userProvider.user;
+          
+          // Show appropriate loading/error states
+          if (_isInitializing || chatProvider.isLoading) {
             return const Center(
-              child: CircularProgressIndicator(color: Colors.white),
+              child: Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  CircularProgressIndicator(color: Colors.white),
+                  SizedBox(height: 16),
+                  Text(
+                    'Loading messages...',
+                    style: TextStyle(color: Colors.white70),
+                  ),
+                ],
+              ),
+            );
+          }
+
+          if (currentUser == null || currentUser.userId == null) {
+            return Center(
+              child: Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  Icon(Icons.person_off, size: 64, color: Colors.grey),
+                  SizedBox(height: 16),
+                  Text(
+                    'User not logged in',
+                    style: TextStyle(color: Colors.white, fontSize: 18),
+                  ),
+                  SizedBox(height: 16),
+                  ElevatedButton(
+                    onPressed: _initializeChats,
+                    child: Text('Retry'),
+                  ),
+                ],
+              ),
             );
           }
           
@@ -95,20 +171,36 @@ class _ChatListScreenState extends State<ChatListScreen> {
           }
           
           if (chatProvider.chats.isEmpty) {
-            return Center(
-              child: Column(
-                mainAxisAlignment: MainAxisAlignment.center,
+            return RefreshIndicator(
+              onRefresh: _initializeChats,
+              child: ListView(
                 children: [
-                  Icon(Icons.chat_bubble_outline, size: 64, color: Colors.grey),
-                  SizedBox(height: 16),
-                  Text(
-                    'No messages yet',
-                    style: TextStyle(color: Colors.white, fontSize: 18),
-                  ),
-                  SizedBox(height: 8),
-                  Text(
-                    'Start a conversation with someone',
-                    style: TextStyle(color: Colors.grey),
+                  SizedBox(height: MediaQuery.of(context).size.height * 0.3),
+                  Center(
+                    child: Column(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        Icon(Icons.chat_bubble_outline, size: 64, color: Colors.grey),
+                        SizedBox(height: 16),
+                        Text(
+                          'No messages yet',
+                          style: TextStyle(color: Colors.white, fontSize: 18),
+                        ),
+                        SizedBox(height: 8),
+                        Text(
+                          'Start a conversation with someone',
+                          style: TextStyle(color: Colors.grey),
+                        ),
+                        SizedBox(height: 24),
+                        ElevatedButton(
+                          onPressed: _initializeChats,
+                          style: ElevatedButton.styleFrom(
+                            backgroundColor: Colors.blue,
+                          ),
+                          child: Text('Refresh'),
+                        ),
+                      ],
+                    ),
                   ),
                 ],
               ),
