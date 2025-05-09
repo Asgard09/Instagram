@@ -1,22 +1,26 @@
 class Post {
   final dynamic id;
   final String caption;
+  final String? displayCaption; // Caption with "with username" format
   final String? content;
   final String? imageBase64;
   final List<String>? imageUrls;
   final dynamic userId;
   final String? username;
   final DateTime? createdAt;
+  final List<String>? taggedPeople;
 
   Post({
     this.id,
     required this.caption,
+    this.displayCaption,
     this.content,
     this.imageBase64,
     this.imageUrls,
     required this.userId,
     this.username,
     this.createdAt,
+    this.taggedPeople,
   });
 
   factory Post.fromJson(Map<String, dynamic> json) {
@@ -54,6 +58,7 @@ class Post {
     return Post(
       id: json['postId'] ?? json['id'],
       caption: json['caption'] ?? '',
+      displayCaption: json['displayCaption'] ?? json['caption'] ?? '',
       content: json['content'],
       imageBase64: json['imageBase64'],
       imageUrls: json['imageUrls'] != null 
@@ -64,6 +69,9 @@ class Post {
       createdAt: json['createdAt'] != null 
         ? DateTime.parse(json['createdAt']) 
         : null,
+      taggedPeople: json['taggedPeople'] != null
+        ? List<String>.from(json['taggedPeople'])
+        : null,
     );
   }
 
@@ -71,11 +79,13 @@ class Post {
     return {
       'id': id,
       'caption': caption,
+      'displayCaption': displayCaption,
       'content': content,
       'imageBase64': imageBase64,
       'userId': userId,
       'username': username,
       'createdAt': createdAt?.toIso8601String(),
+      'taggedPeople': taggedPeople,
     };
   }
 } 

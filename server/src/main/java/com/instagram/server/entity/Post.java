@@ -39,6 +39,11 @@ public class Post {
     @Column(name = "image_url")
     private List<String> imageUrls = new ArrayList<>();
 
+    @ElementCollection
+    @CollectionTable(name = "post_tagged_people", joinColumns = @JoinColumn(name = "post_id"))
+    @Column(name = "username")
+    private List<String> taggedPeople = new ArrayList<>();
+
     @ManyToOne
     @JoinColumn(name = "userId")
     @JsonIdentityInfo(generator = ObjectIdGenerators.PropertyGenerator.class, property = "userId")

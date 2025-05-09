@@ -4,6 +4,7 @@ import 'dart:convert';
 import 'dart:math';
 import 'package:provider/provider.dart';
 import 'package:flutter/foundation.dart' show kIsWeb;
+import 'package:flutter/gestures.dart';
 import '../data/providers/auth_provider.dart';
 import '../data/providers/posts_provider.dart';
 import '../data/providers/user_provider.dart'; // Added for accessing current user info
@@ -21,10 +22,10 @@ class HomeScreen extends StatefulWidget {
   const HomeScreen({Key? key}) : super(key: key);
 
   @override
-  _HomeScreenState createState() => _HomeScreenState();
+  State<HomeScreen> createState() => HomeScreenState();
 }
 
-class _HomeScreenState extends State<HomeScreen> {
+class HomeScreenState extends State<HomeScreen> {
   // Helper method to get the base URL for server resources
   String get serverBaseUrl {
     if (kIsWeb) {
@@ -45,6 +46,13 @@ class _HomeScreenState extends State<HomeScreen> {
     });
   }
 
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    // This will refresh posts when the screen is revisited
+    _loadPosts();
+  }
+
   Future<void> _loadPosts() async {
     final token = Provider.of<AuthProvider>(context, listen: false).token;
     if (token != null) {
@@ -52,7 +60,8 @@ class _HomeScreenState extends State<HomeScreen> {
     }
   }
 
-  Future<void> _refreshPosts() async {
+  // Make this method public so it can be called from outside using a GlobalKey
+  Future<void> refreshPosts() async {
     await _loadPosts();
   }
 
@@ -89,7 +98,7 @@ class _HomeScreenState extends State<HomeScreen> {
         ],
       ),
       body: RefreshIndicator(
-        onRefresh: _refreshPosts,
+        onRefresh: refreshPosts,
         child: Consumer<PostsProvider>(
           builder: (context, postsProvider, child) {
             if (postsProvider.isLoading && postsProvider.posts.isEmpty) {
@@ -163,6 +172,7 @@ class _PostItemState extends State<PostItem> {
   bool _isLiked = false;
   int _likeCount = 0;
   bool _isLoading = false;
+  bool _isNavigatingToTaggedUser = false;
   int? _currentUserId; // Store current user ID
 
   @override
@@ -307,6 +317,37 @@ class _PostItemState extends State<PostItem> {
     }
   }
 
+  // Add this method to build loading overlay when navigating to tagged user
+  Widget _buildLoadingOverlay() {
+    if (!_isNavigatingToTaggedUser) return Container();
+    
+    return Container(
+      color: Colors.black.withOpacity(0.3),
+      width: double.infinity,
+      height: double.infinity,
+      child: Center(
+        child: Container(
+          padding: EdgeInsets.all(20),
+          decoration: BoxDecoration(
+            color: Colors.black.withOpacity(0.7),
+            borderRadius: BorderRadius.circular(10),
+          ),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              CircularProgressIndicator(color: Colors.white),
+              SizedBox(height: 15),
+              Text(
+                'Opening profile...',
+                style: TextStyle(color: Colors.white),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     // Debug post data
@@ -324,135 +365,140 @@ class _PostItemState extends State<PostItem> {
       print('Using post.userId: $displayName');
     }
 
-    return Container(
-      margin: const EdgeInsets.only(bottom: 10),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          // Post header
-          Padding(
-            padding: const EdgeInsets.all(8.0),
-            child: Row(
-              children: [
-                _buildUserAvatar(),
-                SizedBox(width: 8),
-                GestureDetector(
-                  onTap: () {
-                    if (widget.post.userId != null) {
-                      final userId = widget.post.userId.toString();
-                      print('Username tap - userId: $userId, username: ${widget.post.username}');
+    return Stack(
+      children: [
+        // Post content
+        Container(
+          margin: const EdgeInsets.only(bottom: 10),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              // Post header
+              Padding(
+                padding: const EdgeInsets.all(8.0),
+                child: Row(
+                  children: [
+                    _buildUserAvatar(),
+                    SizedBox(width: 8),
+                    GestureDetector(
+                      onTap: () {
+                        if (widget.post.userId != null) {
+                          final userId = widget.post.userId.toString();
+                          print('Username tap - userId: $userId, username: ${widget.post.username}');
 
-                      _navigateToProfile(
-                        userId,
-                        username: widget.post.username,
-                      );
-                    } else if (widget.post.username != null && widget.post.username!.isNotEmpty) {
-                      // If no userId but we have username, try to navigate with just the username
-                      print('No userId available, trying with just username: ${widget.post.username}');
-                      _navigateToProfile(
-                        "0", // Use a placeholder
-                        username: widget.post.username,
-                      );
-                    } else {
-                      ScaffoldMessenger.of(context).showSnackBar(
-                        SnackBar(
-                          content: Text('Cannot view profile: User ID not available'),
-                          backgroundColor: Colors.red,
-                        ),
-                      );
-                    }
-                  },
-                  child: Text(
-                    displayName,
-                    style: TextStyle(
-                      color: Colors.white,
-                      fontWeight: FontWeight.bold,
-                    ),
-                  ),
-                ),
-                Spacer(),
-                IconButton(
-                  icon: Icon(Icons.more_vert, color: Colors.white),
-                  onPressed: () {},
-                ),
-              ],
-            ),
-          ),
-
-          // Post image - handle both URL and Base64
-          _buildPostImage(),
-
-          // Post actions
-          Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 8.0),
-            child: Row(
-              children: [
-                IconButton(
-                  icon: _isLoading
-                      ? SizedBox(
-                    width: 18,
-                    height: 18,
-                    child: CircularProgressIndicator(
-                      strokeWidth: 2,
-                      color: Colors.white,
-                    ),
-                  )
-                      : Icon(
-                    _isLiked ? Icons.favorite : Icons.favorite_border,
-                    color: _isLiked ? Colors.red : Colors.white,
-                  ),
-                  onPressed: _toggleLike,
-                ),
-                if (_likeCount > 0)
-                  Padding(
-                    padding: const EdgeInsets.only(left: 4.0),
-                    child: GestureDetector(
-                      onTap: _showLikesPopup,
+                          _navigateToProfile(
+                            userId,
+                            username: widget.post.username,
+                          );
+                        } else if (widget.post.username != null && widget.post.username!.isNotEmpty) {
+                          // If no userId but we have username, try to navigate with just the username
+                          print('No userId available, trying with just username: ${widget.post.username}');
+                          _navigateToProfile(
+                            "0", // Use a placeholder
+                            username: widget.post.username,
+                          );
+                        } else {
+                          ScaffoldMessenger.of(context).showSnackBar(
+                            SnackBar(
+                              content: Text('Cannot view profile: User ID not available'),
+                              backgroundColor: Colors.red,
+                            ),
+                          );
+                        }
+                      },
                       child: Text(
-                        '$_likeCount',
-                        style: TextStyle(color: Colors.white, fontSize: 14),
+                        displayName,
+                        style: TextStyle(
+                          color: Colors.white,
+                          fontWeight: FontWeight.bold,
+                        ),
                       ),
                     ),
+                    Spacer(),
+                    IconButton(
+                      icon: Icon(Icons.more_vert, color: Colors.white),
+                      onPressed: () {},
+                    ),
+                  ],
+                ),
+              ),
+
+              // Post image - handle both URL and Base64
+              _buildPostImage(),
+
+              // Post actions
+              Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 8.0),
+                child: Row(
+                  children: [
+                    IconButton(
+                      icon: _isLoading
+                          ? SizedBox(
+                        width: 18,
+                        height: 18,
+                        child: CircularProgressIndicator(
+                          strokeWidth: 2,
+                          color: Colors.white,
+                        ),
+                      )
+                          : Icon(
+                        _isLiked ? Icons.favorite : Icons.favorite_border,
+                        color: _isLiked ? Colors.red : Colors.white,
+                      ),
+                      onPressed: _toggleLike,
+                    ),
+                    if (_likeCount > 0)
+                      Padding(
+                        padding: const EdgeInsets.only(left: 4.0),
+                        child: GestureDetector(
+                          onTap: _showLikesPopup,
+                          child: Text(
+                            '$_likeCount',
+                            style: TextStyle(color: Colors.white, fontSize: 14),
+                          ),
+                        ),
+                      ),
+
+                    IconButton(
+                      icon: const Icon(Icons.chat_bubble_outline, color: Colors.white),
+                      onPressed: _showCommentsSheet,
+                    ),
+                    IconButton(
+                      icon: Icon(Icons.send_outlined, color: Colors.white),
+                      onPressed: () {},
+                    ),
+                    Spacer(),
+                    IconButton(
+                      icon: Icon(Icons.bookmark_border, color: Colors.white),
+                      onPressed: () {},
+                    ),
+                  ],
+                ),
+              ),
+
+              // Caption with rich text for clickable tagged users
+              if ((widget.post.displayCaption != null && widget.post.displayCaption!.isNotEmpty) || 
+                  (widget.post.caption.isNotEmpty))
+                Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 4.0),
+                  child: _buildRichCaption(),
+                ),
+
+              // Date
+              if (widget.post.createdAt != null)
+                Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 4.0),
+                  child: Text(
+                    '${widget.post.createdAt!.day}/${widget.post.createdAt!.month}/${widget.post.createdAt!.year}',
+                    style: TextStyle(color: Colors.grey, fontSize: 12),
                   ),
-
-                IconButton(
-                  icon: const Icon(Icons.chat_bubble_outline, color: Colors.white),
-                  onPressed: _showCommentsSheet,
                 ),
-                IconButton(
-                  icon: Icon(Icons.send_outlined, color: Colors.white),
-                  onPressed: () {},
-                ),
-                Spacer(),
-                IconButton(
-                  icon: Icon(Icons.bookmark_border, color: Colors.white),
-                  onPressed: () {},
-                ),
-              ],
-            ),
+            ],
           ),
-
-          // Caption
-          if (widget.post.caption.isNotEmpty)
-            Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 4.0),
-              child: Text(
-                widget.post.caption,
-                style: TextStyle(color: Colors.white),
-              ),
-            ),
-
-          // Date
-          if (widget.post.createdAt != null)
-            Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 4.0),
-              child: Text(
-                '${widget.post.createdAt!.day}/${widget.post.createdAt!.month}/${widget.post.createdAt!.year}',
-                style: TextStyle(color: Colors.grey, fontSize: 12),
-              ),
-            ),
-        ],
-      ),
+        ),
+        // Loading overlay
+        _buildLoadingOverlay(),
+      ],
     );
   }
 
@@ -776,6 +822,118 @@ class _PostItemState extends State<PostItem> {
         radius: 16,
         backgroundColor: Colors.grey,
         child: Icon(Icons.person, color: Colors.white, size: 18),
+      ),
+    );
+  }
+
+  Widget _buildRichCaption() {
+    String captionText = widget.post.displayCaption ?? widget.post.caption;
+    
+    // If there's no tag, just return a simple Text widget
+    if (!captionText.contains('@')) {
+      return Text(
+        captionText,
+        style: TextStyle(color: Colors.white),
+      );
+    }
+    
+    List<TextSpan> spans = [];
+
+    // Regular expression to find tagged usernames
+    RegExp regExp = RegExp(r'@[a-zA-Z0-9_]+');
+    Iterable<RegExpMatch> matches = regExp.allMatches(captionText);
+
+    int lastIndex = 0;
+    for (var match in matches) {
+      // Add text before the match
+      if (match.start > lastIndex) {
+        spans.add(TextSpan(
+          text: captionText.substring(lastIndex, match.start),
+          style: TextStyle(color: Colors.white),
+        ));
+      }
+
+      // Get the username without @ symbol
+      String username = match.group(0)!.substring(1);
+      
+      // Add the match as a clickable text span
+      spans.add(TextSpan(
+        text: match.group(0),
+        style: TextStyle(
+          color: Colors.blue,
+          fontWeight: FontWeight.bold,
+          backgroundColor: Colors.blue.withOpacity(0.1), // Light blue background
+          decoration: TextDecoration.underline,
+        ),
+        recognizer: TapGestureRecognizer()
+          ..onTap = () async {
+            if (_isNavigatingToTaggedUser) return;
+
+            setState(() {
+              _isNavigatingToTaggedUser = true;
+            });
+
+            print('Tagged username clicked: $username');
+            
+            // Try to get the user ID from the username
+            final token = Provider.of<AuthProvider>(context, listen: false).token;
+            if (token != null) {
+              try {
+                final userService = UserService();
+                final userId = await userService.getUserIdByUsername(username, token);
+                
+                if (userId != null) {
+                  _navigateToProfile(
+                    userId,
+                    username: username,
+                  );
+                } else {
+                  // User not found
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    SnackBar(
+                      content: Text('Could not find user profile for @$username'),
+                      backgroundColor: Colors.red,
+                    ),
+                  );
+                  
+                  // Fallback to using just the username
+                  _navigateToProfile(
+                    "0", // Use a placeholder
+                    username: username,
+                  );
+                }
+              } catch (e) {
+                print('Error navigating to tagged user: $e');
+                ScaffoldMessenger.of(context).showSnackBar(
+                  SnackBar(
+                    content: Text('Error accessing user profile: $e'),
+                    backgroundColor: Colors.red,
+                  ),
+                );
+              }
+            }
+
+            setState(() {
+              _isNavigatingToTaggedUser = false;
+            });
+          },
+      ));
+
+      lastIndex = match.end;
+    }
+
+    // Add remaining text after the last match
+    if (lastIndex < captionText.length) {
+      spans.add(TextSpan(
+        text: captionText.substring(lastIndex),
+        style: TextStyle(color: Colors.white),
+      ));
+    }
+
+    return RichText(
+      text: TextSpan(
+        children: spans,
+        style: TextStyle(color: Colors.white),
       ),
     );
   }

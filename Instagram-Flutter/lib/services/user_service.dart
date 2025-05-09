@@ -285,4 +285,50 @@ class UserService {
       return null;
     }
   }
+
+  // Get followers for tagging
+  Future<List<User>> getFollowersForTagging(String token) async {
+    try {
+      print('Fetching followers for tagging');
+      
+      final response = await http.get(
+        Uri.parse('$baseUrl/users/followers'),
+        headers: {
+          'Authorization': 'Bearer $token',
+          'Accept': 'application/json',
+        },
+      );
+
+      print('Get followers response status: ${response.statusCode}');
+
+      if (response.statusCode == 200) {
+        final List<dynamic> responseData = json.decode(response.body);
+        List<User> followers = responseData
+            .map((userData) => User.fromJson(userData))
+            .toList();
+        print('Loaded ${followers.length} followers for tagging');
+        return followers;
+      } else {
+        print('Failed to get followers: ${response.statusCode}');
+        return [];
+      }
+    } catch (e) {
+      print('Error getting followers: $e');
+      return [];
+    }
+  }
+
+  // Get a user's ID by their username
+  Future<String?> getUserIdByUsername(String username, String token) async {
+    try {
+      final user = await getUserByUsername(username, token);
+      if (user != null && user.userId != null) {
+        return user.userId.toString();
+      }
+      return null;
+    } catch (e) {
+      print('Error getting user ID by username: $e');
+      return null;
+    }
+  }
 } 

@@ -7,10 +7,12 @@ public class PostResponse {
     private Long postId;
     private String content;
     private String caption;
+    private String displayCaption; // Caption with "with tagged people" format
     private Date createdAt;
     private List<String> imageUrls;
     private Long userId;
     private String username;
+    private List<String> taggedPeople;
 
     // Getters and setters
     public Long getPostId() {
@@ -35,6 +37,14 @@ public class PostResponse {
 
     public void setCaption(String caption) {
         this.caption = caption;
+    }
+    
+    public String getDisplayCaption() {
+        return displayCaption;
+    }
+
+    public void setDisplayCaption(String displayCaption) {
+        this.displayCaption = displayCaption;
     }
 
     public Date getCreatedAt() {
@@ -67,5 +77,13 @@ public class PostResponse {
 
     public void setUsername(String username) {
         this.username = username;
+    }
+    
+    public List<String> getTaggedPeople() {
+        return taggedPeople;
+    }
+
+    public void setTaggedPeople(List<String> taggedPeople) {
+        this.taggedPeople = taggedPeople;
     }
 } 

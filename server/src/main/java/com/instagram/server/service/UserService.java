@@ -10,6 +10,8 @@ import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.stereotype.Service;
 
 import java.io.IOException;
+import java.util.ArrayList;
+import java.util.List;
 
 @Service
 public class UserService {
@@ -19,6 +21,34 @@ public class UserService {
     public UserService(UserRepository userRepository, FileStorageService fileStorageService) {
         this.userRepository = userRepository;
         this.fileStorageService = fileStorageService;
+    }
+
+    // Get followers for tagging
+    public List<User> getFollowersForTagging(String username) {
+        // For now, return some sample users since we don't have a full follower system
+        // In a real system, we would fetch actual followers from a relationship table
+        
+        // Get current user as base
+        User currentUser = userRepository.findByUsername(username)
+                .orElseThrow(() -> new RuntimeException("User not found"));
+        
+        // Get some other users as "followers" (for demo purposes)
+        List<User> allUsers = userRepository.findAll();
+        List<User> followers = new ArrayList<>();
+        
+        // Add a few users as mock followers (excluding the current user)
+        for (User user : allUsers) {
+            if (!user.getUsername().equals(username)) {
+                followers.add(user);
+            }
+            
+            // Limit to 10 followers for the demo
+            if (followers.size() >= 10) {
+                break;
+            }
+        }
+        
+        return followers;
     }
 
     public User updateBio(UpdateBioRequest request) {
