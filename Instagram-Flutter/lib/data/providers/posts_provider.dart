@@ -41,7 +41,15 @@ class PostsProvider extends ChangeNotifier {
       );
 
       if (post != null) {
-        _posts.insert(0, post); // Add to beginning of list
+        // Refresh the entire posts list to ensure we have the latest data
+        await fetchPosts(token);
+        
+        // If for some reason the post isn't in the list (unlikely but possible),
+        // add it to the beginning
+        if (!_posts.any((p) => p.id == post.id)) {
+          _posts.insert(0, post);
+        }
+        
         _isLoading = false;
         notifyListeners();
         return true;

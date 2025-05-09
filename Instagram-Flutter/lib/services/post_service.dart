@@ -10,7 +10,7 @@ class PostService {
   final String baseUrl = 'http://192.168.1.5:8080/api';
 
   // Method to create post with proper handling for both file paths and blob URLs
-  Future<Post?> createPost(String imagePath, String caption, String token) async {
+  Future<Post?> createPost(String imagePath, String caption, String token, {List<String>? taggedPeople}) async {
     try {
       print('Creating post with image from path: $imagePath');
       
@@ -35,14 +35,14 @@ class PostService {
             final base64String = 'data:$contentType;base64,$base64Image';
             
             // Send the data URL to the server
-            return await _sendPostWithImage(base64String, caption, token);
+            return await _sendPostWithImage(base64String, caption, token, taggedPeople: taggedPeople);
           } catch (e) {
             print('Error processing blob URL: $e');
             return null;
           }
         } else {
           // For direct http/https URLs, let the server handle it
-          return await _sendPostWithImage(imagePath, caption, token);
+          return await _sendPostWithImage(imagePath, caption, token, taggedPeople: taggedPeople);
         }
       } else if (!kIsWeb) {
         // For mobile platforms with a file path, we need to convert to base64
@@ -50,7 +50,7 @@ class PostService {
         try {
           // We need to handle mobile file access
           // This code path is only run on mobile, so we can safely import dart:io in a separate file
-          return await _createMobilePost(imagePath, caption, token);
+          return await _createMobilePost(imagePath, caption, token, taggedPeople: taggedPeople);
         } catch (e) {
           print('Error processing image file: $e');
           return null;
@@ -66,7 +66,18 @@ class PostService {
   }
 
   // Helper method to send post creation request
-  Future<Post?> _sendPostWithImage(String imageData, String caption, String token) async {
+  Future<Post?> _sendPostWithImage(String imageData, String caption, String token, {List<String>? taggedPeople}) async {
+    final Map<String, dynamic> requestBody = {
+      'caption': caption,
+      'content': caption,
+      'imageBase64': imageData
+    };
+    
+    // Add tagged people if available
+    if (taggedPeople != null && taggedPeople.isNotEmpty) {
+      requestBody['taggedPeople'] = taggedPeople;
+    }
+    
     final response = await http.post(
       Uri.parse('$baseUrl/posts'),
       headers: {
@@ -74,11 +85,7 @@ class PostService {
         'Content-Type': 'application/json',
         'Accept': 'application/json',
       },
-      body: json.encode({
-        'caption': caption,
-        'content': caption,
-        'imageBase64': imageData
-      }),
+      body: json.encode(requestBody),
     );
     
     print('Response status: ${response.statusCode}');
@@ -95,7 +102,7 @@ class PostService {
   }
 
   // Separate method that will be implemented by native mobile platforms
-  Future<Post?> _createMobilePost(String imagePath, String caption, String token) async {
+  Future<Post?> _createMobilePost(String imagePath, String caption, String token, {List<String>? taggedPeople}) async {
     try {
       print('Reading file from: $imagePath');
       
@@ -126,7 +133,7 @@ class PostService {
       print('Created data URL with type: $imageType');
 
       // Use the helper method to send the request
-      return await _sendPostWithImage(base64String, caption, token);
+      return await _sendPostWithImage(base64String, caption, token, taggedPeople: taggedPeople);
     } catch (e) {
       print('Error in _createMobilePost: $e');
       return null;

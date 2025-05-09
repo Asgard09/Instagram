@@ -122,6 +122,15 @@ class ReelEx2 extends StatelessWidget {
                 ],
               ),
               /////////////////////////////////
+              // Caption
+              // if (widget.post.caption.isNotEmpty)
+              //   Padding(
+              //     padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 4.0),
+              //     child: Text(
+              //       widget.post.displayCaption ?? widget.post.caption,
+              //       style: TextStyle(color: Colors.white),
+              //     ),
+              //   ),
             ],
           ))),
         ],

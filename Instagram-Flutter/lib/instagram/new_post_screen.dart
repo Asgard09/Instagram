@@ -78,7 +78,13 @@ class _NewPostScreenState extends State<NewPostScreen> {
               Navigator.push(
                 context,
                 MaterialPageRoute(
-                  builder: (_) => EditPostScreen(selectedMedia: _selectedMedia),
+                  builder: (_) => EditPostScreen(
+                    selectedMedia: _selectedMedia,
+                    onPostCreated: () {
+                      // This will execute after post creation
+                      // We'll return to main screen and it will handle refresh
+                    },
+                  ),
                 ),
               );
             }

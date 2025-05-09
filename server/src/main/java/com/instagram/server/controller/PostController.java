@@ -71,6 +71,25 @@ public class PostController {
                 request.setImageBase64(images);
             }
             
+            // Extract tagged people
+            if (requestMap.containsKey("taggedPeople")) {
+                Object taggedData = requestMap.get("taggedPeople");
+                List<String> taggedPeople = new ArrayList<>();
+                
+                if (taggedData instanceof List) {
+                    // List of tagged people
+                    for (Object person : (List<?>) taggedData) {
+                        if (person instanceof String) {
+                            taggedPeople.add((String) person);
+                        }
+                    }
+                    request.setTaggedPeople(taggedPeople);
+                }
+                
+                // Log tagged people
+                System.out.println("Tagged people: " + taggedPeople);
+            }
+            
             // Log the processed request
             System.out.println("Creating post with caption: " + request.getCaption());
             if (request.getImageBase64() != null) {
@@ -128,11 +147,39 @@ public class PostController {
         response.setContent(post.getContent());
         response.setCreatedAt(post.getCreatedAt());
         response.setImageUrls(post.getImageUrls());
+        response.setTaggedPeople(post.getTaggedPeople());
         
         // Extract user information
         if (post.getUser() != null) {
             response.setUserId(post.getUser().getUserId());
             response.setUsername(post.getUser().getUsername());
+        }
+        
+        // Create display caption with "@username" format instead of "with username"
+        if (post.getTaggedPeople() != null && !post.getTaggedPeople().isEmpty()) {
+            StringBuilder displayCaption = new StringBuilder(post.getCaption() != null ? post.getCaption() : "");
+            
+            // Add space if caption doesn't end with a space
+            if (!displayCaption.toString().isEmpty() && !displayCaption.toString().endsWith(" ")) {
+                displayCaption.append(" ");
+            }
+            
+            // Get the first tagged person
+            String firstTagged = post.getTaggedPeople().get(0);
+            
+            // Add "@username" to the caption
+            displayCaption.append("@").append(firstTagged);
+            
+            // If there are more than one tagged people, add "and X others"
+            if (post.getTaggedPeople().size() > 1) {
+                int othersCount = post.getTaggedPeople().size() - 1;
+                displayCaption.append(" and ").append(othersCount).append(othersCount > 1 ? " others" : " other");
+            }
+            
+            response.setDisplayCaption(displayCaption.toString());
+        } else {
+            // If no tagged people, display caption is same as regular caption
+            response.setDisplayCaption(post.getCaption());
         }
         
         return response;

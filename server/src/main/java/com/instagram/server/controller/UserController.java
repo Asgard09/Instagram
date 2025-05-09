@@ -13,6 +13,10 @@ import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.core.userdetails.UserDetails;
 
 import java.io.IOException;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.stream.Collectors;
 
 @RestController
 @RequestMapping("/api/users")
@@ -120,6 +124,33 @@ public class UserController {
             }
         } catch (Exception e) {
             return ResponseEntity.status(500).body("Error retrieving user: " + e.getMessage());
+        }
+    }
+
+    @GetMapping("/followers")
+    public ResponseEntity<?> getFollowersForTagging() {
+        try {
+            UserDetails userDetails = (UserDetails) SecurityContextHolder.getContext().getAuthentication().getPrincipal();
+            List<User> followers = userService.getFollowersForTagging(userDetails.getUsername());
+            
+            // Transform to a simpler representation for tagging
+            List<Map<String, Object>> tagUsers = followers.stream()
+                .map(follower -> {
+                    Map<String, Object> userMap = new HashMap<>();
+                    userMap.put("userId", follower.getUserId());
+                    userMap.put("username", follower.getUsername());
+                    userMap.put("name", follower.getName());
+                    userMap.put("profilePicture", follower.getProfilePicture());
+                    return userMap;
+                })
+                .collect(Collectors.toList());
+            
+            return ResponseEntity.ok(tagUsers);
+        } catch (Exception e) {
+            System.err.println("Error getting followers: " + e.getMessage());
+            e.printStackTrace();
+            return ResponseEntity.status(500)
+                    .body("Error getting followers: " + e.getMessage());
         }
     }
 }

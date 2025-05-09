@@ -3,6 +3,9 @@ import 'package:practice_widgets/instagram/new_post_screen.dart';
 import 'package:practice_widgets/instagram/profile_screen.dart';
 import 'package:practice_widgets/instagram/reels_screen.dart';
 import 'package:practice_widgets/instagram/search_screen.dart';
+import 'package:provider/provider.dart';
+import '../data/providers/posts_provider.dart';
+import '../data/providers/auth_provider.dart';
 
 import 'home_screen.dart';
 
@@ -20,19 +23,23 @@ class MainScreen extends StatefulWidget {
 
 class _MainScreenState extends State<MainScreen> {
   late int _currentIndex;
+  
+  final List<Widget> _screens = [];
 
   @override
   void initState() {
     super.initState();
     _currentIndex = widget.initialTabIndex;
+    
+    // Initialize screens list
+    _screens.addAll([
+      HomeScreen(),
+      const Scaffold(body: Center(child: Text('Search', style: TextStyle(color: Colors.white)))),
+      const Scaffold(body: Center(child: Text('Add Post', style: TextStyle(color: Colors.white)))),
+      const Scaffold(body: Center(child: Text('Reels', style: TextStyle(color: Colors.white)))),
+      const ProfileScreen(),
+    ]);
   }
-  final List<Widget> _screens = [
-    const HomeScreen(),
-    const Scaffold(body: Center(child: Text('Search', style: TextStyle(color: Colors.white)))),
-    const Scaffold(body: Center(child: Text('Add Post', style: TextStyle(color: Colors.white)))),
-    const Scaffold(body: Center(child: Text('Reels', style: TextStyle(color: Colors.white)))),
-    const ProfileScreen(),
-  ];
 
   // List of icons for the bottom navigation
   final List<IconData> _navigationIcons = [
@@ -43,6 +50,16 @@ class _MainScreenState extends State<MainScreen> {
     Icons.person,
   ];
 
+  // Refresh posts directly using PostsProvider
+  void _refreshPosts() {
+    if (_currentIndex == 0) {
+      final token = Provider.of<AuthProvider>(context, listen: false).token;
+      if (token != null) {
+        Provider.of<PostsProvider>(context, listen: false).fetchPosts(token);
+      }
+    }
+  }
+
   void _onItemTapped(int index) {
     // If add button (index 2) is tapped, open post screen instead of switching
     if (index == 2) {
@@ -51,20 +68,38 @@ class _MainScreenState extends State<MainScreen> {
       setState(() {
         _currentIndex = index;
       });
+      
+      // Refresh posts when returning to the home screen
+      if (index == 0) {
+        _refreshPosts();
+      }
     }
   }
 
   void _openPostScreen() {
     Navigator.push(
       context,
-      MaterialPageRoute(builder: (context) => const NewPostScreen()),
-    );
+      MaterialPageRoute(
+        builder: (context) => const NewPostScreen(),
+      ),
+    ).then((_) {
+      // Refresh the posts when returning from creating a new post
+      if (_currentIndex == 0) {
+        _refreshPosts();
+      }
+    });
   }
+  
   void switchToTab(int index) {
     if (mounted) {
       setState(() {
         _currentIndex = index;
       });
+      
+      // Refresh posts when switching to the home screen
+      if (index == 0) {
+        _refreshPosts();
+      }
     }
   }
 
