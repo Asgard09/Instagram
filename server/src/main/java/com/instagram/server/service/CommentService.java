@@ -83,4 +83,12 @@ public class CommentService {
         
         commentRepository.delete(comment);
     }
+
+    public long countCommentFromPost(Long postId){
+        Post post = postRepository.findById(postId)
+                .orElseThrow(() -> new RuntimeException("Post not found"));
+        return commentRepository.countByPost(post);
+    }
+
+
 } 

@@ -67,4 +67,13 @@ public class CommentController {
         response.setProfilePicture(comment.getUser().getProfilePicture());
         return response;
     }
-} 
+
+    /**
+     *  Count comment from post
+     */
+    @GetMapping("/countFromPost/{postId}")
+    private ResponseEntity<Long> countCommentFromPost(@PathVariable Long postId){
+        Long res = commentService.countCommentFromPost(postId);
+        return ResponseEntity.ok(res);
+    }
+}
