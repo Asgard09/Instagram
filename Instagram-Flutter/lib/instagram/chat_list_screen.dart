@@ -247,7 +247,7 @@ class _ChatListScreenState extends State<ChatListScreen> {
     if (profilePicture.startsWith('http')) {
       return profilePicture;
     } else {
-      final baseUrl = 'http://192.168.1.5:8080';
+      final baseUrl = 'http://172.22.98.43:8080';
       return '$baseUrl/uploads/$profilePicture';
     }
   }

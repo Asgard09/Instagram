@@ -8,9 +8,9 @@ class ChatService {
   // Server base URL
   String get _baseUrl {
     if (kIsWeb) {
-      return 'http://192.168.1.5:8080';
+      return 'http://172.22.98.43:8080';
     } else {
-      return 'http://192.168.1.5:8080';
+      return 'http://172.22.98.43:8080';
     }
   }
 

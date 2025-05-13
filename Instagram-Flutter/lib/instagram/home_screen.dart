@@ -8,6 +8,8 @@ import 'package:flutter/gestures.dart';
 import '../data/providers/auth_provider.dart';
 import '../data/providers/posts_provider.dart';
 import '../data/providers/user_provider.dart'; // Added for accessing current user info
+import '../data/providers/likes_provider.dart';
+import '../data/providers/comments_provider.dart';
 import '../models/post.dart';
 import '../widgets/popup_comment.dart';
 import '../widgets/popup_listlike.dart';
@@ -15,7 +17,6 @@ import 'main_screen.dart';
 import 'user_profile_screen.dart';
 import 'profile_screen.dart'; // Import ProfileScreen
 import 'chat_list_screen.dart'; // Import ChatListScreen
-import '../data/providers/likes_provider.dart';
 import '../services/user_service.dart'; // Added for user service to get current user
 
 class HomeScreen extends StatefulWidget {
@@ -30,10 +31,10 @@ class HomeScreenState extends State<HomeScreen> {
   String get serverBaseUrl {
     if (kIsWeb) {
       // Use the specific IP for web
-      return 'http://192.168.1.5:8080';
+      return 'http://172.22.98.43:8080';
     } else {
       // For mobile platforms
-      return 'http://192.168.1.5:8080';
+      return 'http://172.22.98.43:8080';
     }
   }
 
@@ -171,6 +172,7 @@ class PostItem extends StatefulWidget {
 class _PostItemState extends State<PostItem> {
   bool _isLiked = false;
   int _likeCount = 0;
+  int _commentCount = 0;
   bool _isLoading = false;
   bool _isNavigatingToTaggedUser = false;
   int? _currentUserId; // Store current user ID
@@ -179,6 +181,7 @@ class _PostItemState extends State<PostItem> {
   void initState() {
     super.initState();
     _fetchLikeData();
+    _fetchCommentCount();
     _getCurrentUserId(); // Get current user ID when component initializes
   }
 
@@ -208,6 +211,24 @@ class _PostItemState extends State<PostItem> {
     }
   }
 
+  // Fetch comment count
+  Future<void> _fetchCommentCount() async {
+    final token = Provider.of<AuthProvider>(context, listen: false).token;
+    if (token != null && widget.post.id != null) {
+      int postId = int.parse(widget.post.id.toString());
+
+      // Get the comment count
+      await Provider.of<CommentsProvider>(context, listen: false)
+          .fetchCommentCount(token, postId);
+
+      // Update local state
+      setState(() {
+        _commentCount = Provider.of<CommentsProvider>(context, listen: false)
+            .getCommentCount(postId);
+      });
+    }
+  }
+
   void _showLikesPopup() {
     showDialog(
       context: context,
@@ -219,13 +240,23 @@ class _PostItemState extends State<PostItem> {
   }
 
   void _showCommentsSheet() {
+    final postId = int.parse(widget.post.id.toString());
     showModalBottomSheet(
       context: context,
       isScrollControlled: true,
       backgroundColor: Colors.transparent,
       builder: (context) => CommentsBottomSheet(
-        postId: int.parse(widget.post.id.toString()),
+        postId: postId,
         onCommentSubmitted: (comment) {
+          // When a comment is added, increment the count
+          Provider.of<CommentsProvider>(context, listen: false)
+              .incrementCommentCount(postId);
+          
+          // Update the local state
+          setState(() {
+            _commentCount = Provider.of<CommentsProvider>(context, listen: false)
+                .getCommentCount(postId);
+          });
         },
       ),
     );
@@ -449,7 +480,7 @@ class _PostItemState extends State<PostItem> {
                     ),
                     if (_likeCount > 0)
                       Padding(
-                        padding: const EdgeInsets.only(left: 4.0),
+                        padding: const EdgeInsets.only(left: 0.0),
                         child: GestureDetector(
                           onTap: _showLikesPopup,
                           child: Text(
@@ -463,6 +494,17 @@ class _PostItemState extends State<PostItem> {
                       icon: const Icon(Icons.chat_bubble_outline, color: Colors.white),
                       onPressed: _showCommentsSheet,
                     ),
+                    if (_commentCount > 0)
+                      Padding(
+                        padding: const EdgeInsets.only(left: 0.0),
+                        child: GestureDetector(
+                          onTap: _showCommentsSheet,
+                          child: Text(
+                            '$_commentCount',
+                            style: TextStyle(color: Colors.white, fontSize: 14),
+                          ),
+                        ),
+                      ),
                     IconButton(
                       icon: Icon(Icons.send_outlined, color: Colors.white),
                       onPressed: () {},

@@ -57,7 +57,7 @@ class _CommentsBottomSheetState extends State<CommentsBottomSheet> {
     try {
       final token = Provider.of<AuthProvider>(context, listen: false).token;
       final response = await http.get(
-        Uri.parse('http://192.168.1.5:8080/api/comments/post/${widget.postId}'),
+        Uri.parse('http://172.22.98.43:8080/api/comments/post/${widget.postId}'),
         headers: {
           'Authorization': 'Bearer $token',
           'Content-Type': 'application/json',
@@ -105,7 +105,7 @@ class _CommentsBottomSheetState extends State<CommentsBottomSheet> {
           : _commentController.text.trim();
 
       final response = await http.post(
-        Uri.parse('http://192.168.1.5:8080/api/comments/post/${widget.postId}'),
+        Uri.parse('http://172.22.98.43:8080/api/comments/post/${widget.postId}'),
         headers: {
           'Authorization': 'Bearer $token',
           'Content-Type': 'application/json',
@@ -127,10 +127,6 @@ class _CommentsBottomSheetState extends State<CommentsBottomSheet> {
 
         if (widget.onCommentSubmitted != null) {
           widget.onCommentSubmitted!(commentText);
-        }
-
-        if (mounted) {
-          Navigator.of(context).pop();
         }
       } else {
         _showErrorSnackBar('Failed to post comment');
@@ -234,7 +230,7 @@ class _CommentsBottomSheetState extends State<CommentsBottomSheet> {
                         comment: comment,
                         index: index,
                         onReply: () => _startReply(comment.username),
-                        serverBaseUrl: 'http://192.168.1.5:8080', // Pass base URL
+                        serverBaseUrl: 'http://172.22.98.43:8080', // Pass base URL
                       );
                     },
                   ),
@@ -281,7 +277,7 @@ class _CommentsBottomSheetState extends State<CommentsBottomSheet> {
                     crossAxisAlignment: CrossAxisAlignment.end,
                     children: [
                       widget.currentUserAvatar != null
-                          ? _buildAvatar(widget.currentUserAvatar!, 'http://192.168.1.5:8080')
+                          ? _buildAvatar(widget.currentUserAvatar!, 'http://172.22.98.43:8080')
                           : const CircleAvatar(
                         radius: 18,
                         backgroundColor: Colors.grey,

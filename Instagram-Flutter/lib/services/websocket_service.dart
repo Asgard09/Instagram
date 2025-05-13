@@ -10,9 +10,9 @@ class WebSocketService {
   // Server base URL
   String get _baseUrl {
     if (kIsWeb) {
-      return 'ws://192.168.1.5:8080';
+      return 'ws://172.22.98.43:8080';
     } else {
-      return 'ws://192.168.1.5:8080';
+      return 'ws://172.22.98.43:8080';
     }
   }
 
