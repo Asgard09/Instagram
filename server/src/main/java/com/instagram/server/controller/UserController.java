@@ -153,6 +153,31 @@ public class UserController {
                     .body("Error getting followers: " + e.getMessage());
         }
     }
+
+    @GetMapping("/search")
+    public ResponseEntity<List<Map<String, Object>>> searchUsers(@RequestParam String query) {
+        try {
+            System.out.println("Search request received with query: " + query);
+            List<User> users = userService.searchUsers(query);
+            System.out.println("Search results count: " + users.size());
+            
+            List<Map<String, Object>> results = users.stream()
+                .map(user -> {
+                    Map<String, Object> userMap = new HashMap<>();
+                    userMap.put("userId", user.getUserId());
+                    userMap.put("username", user.getUsername());
+                    userMap.put("name", user.getName());
+                    userMap.put("profilePicture", user.getProfilePicture());
+                    return userMap;
+                })
+                .collect(Collectors.toList());
+            
+            return ResponseEntity.ok(results);
+        } catch (Exception e) {
+            e.printStackTrace();
+            return ResponseEntity.status(500).body(null);
+        }
+    }
 }
 
 

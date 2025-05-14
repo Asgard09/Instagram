@@ -11,6 +11,7 @@ import org.springframework.stereotype.Service;
 
 import java.io.IOException;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
 
 @Service
@@ -155,5 +156,15 @@ public class UserService {
     public User getUserById(Long userId) {
         return userRepository.findById((long) Math.toIntExact(userId))
                 .orElseThrow(() -> new RuntimeException("User not found"));
+    }
+
+    // Add this method to your UserService interface
+    public List<User> searchUsers(String query){
+        if (query == null || query.trim().isEmpty()) {
+            return Collections.emptyList();
+        }
+
+        // Don't add wildcards - Spring's Containing keyword will do this automatically
+        return userRepository.findByUsernameContainingIgnoreCaseOrNameContainingIgnoreCase(query, query);
     }
 } 
