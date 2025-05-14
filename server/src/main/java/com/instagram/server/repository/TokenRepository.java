@@ -3,6 +3,7 @@ package com.instagram.server.repository;
 import com.instagram.server.entity.Token;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
+import org.springframework.data.repository.query.Param;
 
 import java.util.List;
 import java.util.Optional;
@@ -14,9 +15,17 @@ public interface TokenRepository extends JpaRepository<Token, Integer> {
            """)
     List<Token> findAllAccessTokensByUser(Long userId);
 
+//    @Query("""
+//            select t from Token t
+//            where t.accessToken = :token
+//            order by t.id desc
+//            limit 1
+//           """)
+//    Optional<Token> findByAccessToken(@Param("token") String token);
+
     Optional<Token> findByAccessToken(String token);
-    
+
     List<Token> findAllByAccessToken(String token);
 
-    Optional<Token > findByRefreshToken(String token);
+    Optional<Token> findByRefreshToken(String token);
 }
