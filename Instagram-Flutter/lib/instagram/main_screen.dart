@@ -3,6 +3,7 @@ import 'package:practice_widgets/instagram/new_post_screen.dart';
 import 'package:practice_widgets/instagram/profile_screen.dart';
 import 'package:practice_widgets/instagram/reels_screen.dart';
 import 'package:practice_widgets/instagram/search_screen.dart';
+import 'package:practice_widgets/instagram/user_search_screen.dart';
 import 'package:provider/provider.dart';
 import '../data/providers/posts_provider.dart';
 import '../data/providers/auth_provider.dart';
@@ -23,6 +24,7 @@ class MainScreen extends StatefulWidget {
 
 class _MainScreenState extends State<MainScreen> {
   late int _currentIndex;
+  bool _isSearchFocused = false;
   
   final List<Widget> _screens = [];
 
@@ -34,7 +36,7 @@ class _MainScreenState extends State<MainScreen> {
     // Initialize screens list
     _screens.addAll([
       HomeScreen(),
-      const Scaffold(body: Center(child: Text('Search', style: TextStyle(color: Colors.white)))),
+      SearchScreen(),
       const Scaffold(body: Center(child: Text('Add Post', style: TextStyle(color: Colors.white)))),
       const Scaffold(body: Center(child: Text('Reels', style: TextStyle(color: Colors.white)))),
       const ProfileScreen(),
@@ -43,11 +45,11 @@ class _MainScreenState extends State<MainScreen> {
 
   // List of icons for the bottom navigation
   final List<IconData> _navigationIcons = [
-    Icons.home,
+    Icons.home_outlined,
     Icons.search_outlined,
     Icons.add_box_outlined,
-    Icons.smart_display_outlined,
-    Icons.person,
+    Icons.movie_outlined,
+    Icons.person_outline,
   ];
 
   // Refresh posts directly using PostsProvider
@@ -61,7 +63,17 @@ class _MainScreenState extends State<MainScreen> {
   }
 
   void _onItemTapped(int index) {
-    // If add button (index 2) is tapped, open post screen instead of switching
+    if (index == 1) {
+      // When search icon is tapped, show the search page with focus
+      Navigator.push(
+        context,
+        MaterialPageRoute(
+          builder: (context) => UserSearchScreen(),
+        ),
+      );
+      return;
+    }
+    
     if (index == 2) {
       _openPostScreen();
     } else {
