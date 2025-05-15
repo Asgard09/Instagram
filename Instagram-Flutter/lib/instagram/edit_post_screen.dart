@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 import 'dart:io';
-import 'dart:convert';
 import '../models/media_item.dart';
 import 'package:flutter/foundation.dart' show kIsWeb;
 import '../services/post_service.dart';
@@ -111,12 +110,12 @@ class _EditPostScreenState extends State<EditPostScreen> {
                             : null,
                         backgroundColor: Colors.grey[800],
                         child: follower.profilePicture == null
-                            ? Icon(Icons.person, color: Colors.white)
+                            ? const Icon(Icons.person, color: Colors.white)
                             : null,
                       ),
                       title: Text(
                         follower.username ?? 'Unknown',
-                        style: TextStyle(color: Colors.white),
+                        style: const TextStyle(color: Colors.white),
                       ),
                       subtitle: Text(
                         follower.name ?? '',

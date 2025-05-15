@@ -1,21 +1,18 @@
 import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
 import 'dart:convert';
-import 'dart:math';
 import 'package:provider/provider.dart';
 import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:flutter/gestures.dart';
 import '../data/providers/auth_provider.dart';
 import '../data/providers/posts_provider.dart';
-import '../data/providers/user_provider.dart'; // Added for accessing current user info
 import '../data/providers/likes_provider.dart';
 import '../data/providers/comments_provider.dart';
 import '../models/post.dart';
 import '../widgets/popup_comment.dart';
-import '../widgets/popup_listlike.dart';
+import '../widgets/popup_list_like.dart';
 import 'main_screen.dart';
 import 'user_profile_screen.dart';
-import 'profile_screen.dart'; // Import ProfileScreen
 import 'chat_list_screen.dart'; // Import ChatListScreen
 import '../services/user_service.dart'; // Added for user service to get current user
 
@@ -31,10 +28,10 @@ class HomeScreenState extends State<HomeScreen> {
   String get serverBaseUrl {
     if (kIsWeb) {
       // Use the specific IP for web
-      return 'http://172.22.98.43:8080';
+      return 'http://192.168.100.23:8080';
     } else {
       // For mobile platforms
-      return 'http://172.22.98.43:8080';
+      return 'http://192.168.100.23:8080';
     }
   }
 
@@ -171,9 +168,11 @@ class PostItem extends StatefulWidget {
 
 class _PostItemState extends State<PostItem> {
   bool _isLiked = false;
+  bool _isSaved = false;
   int _likeCount = 0;
   int _commentCount = 0;
   bool _isLoading = false;
+  bool _isSavingPost = false;
   bool _isNavigatingToTaggedUser = false;
   int? _currentUserId; // Store current user ID
 
@@ -182,7 +181,9 @@ class _PostItemState extends State<PostItem> {
     super.initState();
     _fetchLikeData();
     _fetchCommentCount();
-    _getCurrentUserId(); // Get current user ID when component initializes
+    _getCurrentUserId().then((_) {
+      _checkSavedStatus(); // Check if post is saved after getting user ID
+    });
   }
 
   // Function to get the current user ID from token
@@ -379,6 +380,39 @@ class _PostItemState extends State<PostItem> {
     );
   }
 
+  // Add this method to check if the post is saved
+  Future<void> _checkSavedStatus() async {
+    if (_currentUserId == null || widget.post.id == null) {
+      print('Cannot check save status: missing currentUserId or postId');
+      return;
+    }
+    
+    final token = Provider.of<AuthProvider>(context, listen: false).token;
+    if (token == null) return;
+    
+    try {
+      final response = await http.get(
+        Uri.parse('${widget.serverBaseUrl}/api/posts/is-saved/${widget.post.id}/${_currentUserId}'),
+        headers: {
+          'Authorization': 'Bearer $token',
+          'Content-Type': 'application/json',
+        },
+      );
+      
+      if (response.statusCode == 200) {
+        final data = jsonDecode(response.body);
+        setState(() {
+          _isSaved = data['saved'] as bool;
+        });
+        print('Post saved status: ${_isSaved ? 'Saved' : 'Not saved'}');
+      } else {
+        print('Failed to get saved status: ${response.statusCode} - ${response.body}');
+      }
+    } catch (e) {
+      print('Error checking saved status: $e');
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     // Debug post data
@@ -511,8 +545,20 @@ class _PostItemState extends State<PostItem> {
                     ),
                     Spacer(),
                     IconButton(
-                      icon: Icon(Icons.bookmark_border, color: Colors.white),
-                      onPressed: () {},
+                      icon: _isSavingPost
+                        ? SizedBox(
+                            width: 18,
+                            height: 18,
+                            child: CircularProgressIndicator(
+                              strokeWidth: 2,
+                              color: Colors.white,
+                            ),
+                          )
+                        : Icon(
+                            _isSaved ? Icons.bookmark : Icons.bookmark_border, 
+                            color: Colors.white
+                          ),
+                      onPressed: _savePost,
                     ),
                   ],
                 ),
@@ -978,5 +1024,81 @@ class _PostItemState extends State<PostItem> {
         style: TextStyle(color: Colors.white),
       ),
     );
+  }
+
+  Future<void> _savePost() async {
+    final token = Provider.of<AuthProvider>(context, listen: false).token;
+    if (token == null || _currentUserId == null || widget.post.id == null) {
+      print('Cannot save post: missing token, currentUserId, or postId');
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('Unable to save post. Please try again later.'),
+          backgroundColor: Colors.red,
+        ),
+      );
+      return;
+    }
+    
+    // Prevent multiple simultaneous save/unsave operations
+    if (_isSavingPost) return;
+    
+    setState(() {
+      _isSavingPost = true;
+    });
+    
+    try {
+      final response = await (_isSaved 
+        ? http.delete(
+            Uri.parse('${widget.serverBaseUrl}/api/posts/un-save/${widget.post.id}/${_currentUserId}'),
+            headers: {
+              'Authorization': 'Bearer $token',
+              'Content-Type': 'application/json',
+            },
+          )
+        : http.post(
+            Uri.parse('${widget.serverBaseUrl}/api/posts/save/${widget.post.id}/${_currentUserId}'),
+            headers: {
+              'Authorization': 'Bearer $token',
+              'Content-Type': 'application/json',
+            },
+          )
+      );
+      
+      if (response.statusCode == 200) {
+        setState(() {
+          _isSaved = !_isSaved;
+        });
+        print(_isSaved ? 'Post saved successfully' : 'Post unsaved successfully');
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(_isSaved 
+              ? 'Post saved to your collection' 
+              : 'Post removed from your collection'
+            ),
+            backgroundColor: Colors.green,
+          ),
+        );
+      } else {
+        print('Failed to ${_isSaved ? 'unsave' : 'save'} post: ${response.statusCode} - ${response.body}');
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Failed to ${_isSaved ? 'remove' : 'save'} post. Please try again.'),
+            backgroundColor: Colors.red,
+          ),
+        );
+      }
+    } catch (e) {
+      print('Error ${_isSaved ? 'unsaving' : 'saving'} post: $e');
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('Error ${_isSaved ? 'removing' : 'saving'} post: $e'),
+          backgroundColor: Colors.red,
+        ),
+      );
+    } finally {
+      setState(() {
+        _isSavingPost = false;
+      });
+    }
   }
 }
