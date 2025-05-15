@@ -70,15 +70,14 @@ public class JwtService {
     }
 
     public String generateToken(User user, long expireTime) {
-        String token = Jwts
+
+        return Jwts
                 .builder()
                 .subject(user.getUsername())
                 .issuedAt(new Date(System.currentTimeMillis()))
                 .expiration(new Date(System.currentTimeMillis() + expireTime ))
                 .signWith(getSigningKey())
                 .compact();
-
-        return token;
     }
 
     private SecretKey getSigningKey() {

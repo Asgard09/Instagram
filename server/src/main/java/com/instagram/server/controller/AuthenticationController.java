@@ -23,8 +23,8 @@ public class AuthenticationController {
 
     @PostMapping("/login")
     public ResponseEntity<AuthenticationResponse> login(@RequestBody AuthRequest request) {
-        System.out.println("access token :" + authenticationService.authenticate(request).getAccessToken());
-        return ResponseEntity.ok(authenticationService.authenticate(request));
+        AuthenticationResponse response = authenticationService.authenticate(request);
+        return ResponseEntity.ok(response);
     }
 
     @GetMapping("/demo")

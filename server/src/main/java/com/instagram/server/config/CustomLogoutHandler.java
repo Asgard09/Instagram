@@ -9,6 +9,7 @@ import org.springframework.security.web.authentication.logout.LogoutHandler;
 import org.springframework.stereotype.Component;
 
 import java.util.List;
+import java.util.Optional;
 
 @Component
 public class CustomLogoutHandler implements LogoutHandler {
@@ -29,21 +30,11 @@ public class CustomLogoutHandler implements LogoutHandler {
 
         String token = authHeader.substring(7);
 
-        // Get all tokens matching this access token (might be more than one)
-        List<Token> tokensToInvalidate = tokenRepository.findAllByAccessToken(token);
+        Optional<Token> storedToken = tokenRepository.findByAccessToken(token);
 
-        if (tokensToInvalidate.isEmpty()) {
-            System.out.println("No tokens found for the provided access token");
-            return;
+        if (storedToken.isPresent()){
+            storedToken.get().setLoggedOut(true);
+            tokenRepository.save(storedToken.get());
         }
-
-        // Mark all matching tokens as logged out
-        for (Token storedToken : tokensToInvalidate) {
-            storedToken.setLoggedOut(true);
-        }
-
-        // Save all the updated tokens
-        tokenRepository.saveAll(tokensToInvalidate);
-        System.out.println("Successfully logged out " + tokensToInvalidate.size() + " token(s)");
     }
 }
