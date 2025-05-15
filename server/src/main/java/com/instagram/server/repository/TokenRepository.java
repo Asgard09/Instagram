@@ -15,14 +15,6 @@ public interface TokenRepository extends JpaRepository<Token, Integer> {
            """)
     List<Token> findAllAccessTokensByUser(Long userId);
 
-//    @Query("""
-//            select t from Token t
-//            where t.accessToken = :token
-//            order by t.id desc
-//            limit 1
-//           """)
-//    Optional<Token> findByAccessToken(@Param("token") String token);
-
     Optional<Token> findByAccessToken(String token);
 
     List<Token> findAllByAccessToken(String token);

@@ -2,8 +2,10 @@ package com.instagram.server.service;
 
 import com.instagram.server.dto.request.CreatePostRequest;
 import com.instagram.server.entity.Post;
+import com.instagram.server.entity.PostSave;
 import com.instagram.server.entity.User;
 import com.instagram.server.repository.PostRepository;
+import com.instagram.server.repository.PostSaveRepository;
 import com.instagram.server.repository.UserRepository;
 import jakarta.transaction.Transactional;
 import org.springframework.security.core.context.SecurityContextHolder;
@@ -14,6 +16,7 @@ import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Date;
 import java.util.List;
+import java.util.Optional;
 
 @Service
 public class PostService {
@@ -21,12 +24,14 @@ public class PostService {
     private final PostRepository postRepository;
     private final UserRepository userRepository;
     private final FileStorageService fileStorageService;
+    private final PostSaveRepository postSaveRepository;
 
     public PostService(PostRepository postRepository, UserRepository userRepository,
-            FileStorageService fileStorageService) {
+            FileStorageService fileStorageService, PostSaveRepository postSaveRepository) {
         this.postRepository = postRepository;
         this.userRepository = userRepository;
         this.fileStorageService = fileStorageService;
+        this.postSaveRepository = postSaveRepository;
     }
 
     @Transactional
@@ -85,5 +90,23 @@ public class PostService {
         // Here you would typically get posts from users that the current user follows
         // For now, we'll just return all posts ordered by creation date
         return postRepository.findAllByOrderByCreatedAtDesc();
+    }
+
+    public void savePost(Long postId, Long userId){
+        Optional<User> user = userRepository.findById(userId);
+        Optional<Post> post = postRepository.findById(postId);
+
+        PostSave postSave = new PostSave();
+
+        if (user.isPresent() && post.isPresent()){
+            postSave.setUser(user.get());
+            postSave.setPost(post.get());
+        }
+        postSaveRepository.save(postSave);
+    }
+
+    public List<PostSave> getAllPostSavedByUser(Long userId){
+        Optional<User> user = userRepository.findById(userId);
+        return user.map(postSaveRepository::findByUserOrderBySavedAtDesc).orElse(null);
     }
 } 

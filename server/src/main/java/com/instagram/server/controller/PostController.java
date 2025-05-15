@@ -1,11 +1,10 @@
 package com.instagram.server.controller;
 
-import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.instagram.server.dto.request.CreatePostRequest;
 import com.instagram.server.dto.response.PostResponse;
 import com.instagram.server.entity.Post;
-import com.instagram.server.entity.User;
+import com.instagram.server.entity.PostSave;
 import com.instagram.server.service.PostService;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
@@ -32,24 +31,24 @@ public class PostController {
         try {
             // Log the raw request to debug
             System.out.println("Raw request: " + requestMap);
-            
+
             ObjectMapper mapper = new ObjectMapper();
             CreatePostRequest request = new CreatePostRequest();
-            
+
             // Extract caption/content
             if (requestMap.containsKey("caption")) {
                 request.setCaption((String) requestMap.get("caption"));
             }
-            
+
             if (requestMap.containsKey("content")) {
                 request.setContent((String) requestMap.get("content"));
             }
-            
+
             // Handle different image formats
             if (requestMap.containsKey("imageBase64")) {
                 Object imageData = requestMap.get("imageBase64");
                 List<String> images = new ArrayList<>();
-                
+
                 if (imageData instanceof String) {
                     // Single image as string
                     images.add((String) imageData);
@@ -61,7 +60,7 @@ public class PostController {
                         }
                     }
                 }
-                
+
                 request.setImageBase64(images);
             } else if (requestMap.containsKey("imageUrl")) {
                 // Handle imageUrl field
@@ -70,12 +69,12 @@ public class PostController {
                 images.add(imageUrl);
                 request.setImageBase64(images);
             }
-            
+
             // Extract tagged people
             if (requestMap.containsKey("taggedPeople")) {
                 Object taggedData = requestMap.get("taggedPeople");
                 List<String> taggedPeople = new ArrayList<>();
-                
+
                 if (taggedData instanceof List) {
                     // List of tagged people
                     for (Object person : (List<?>) taggedData) {
@@ -85,11 +84,11 @@ public class PostController {
                     }
                     request.setTaggedPeople(taggedPeople);
                 }
-                
+
                 // Log tagged people
                 System.out.println("Tagged people: " + taggedPeople);
             }
-            
+
             // Log the processed request
             System.out.println("Creating post with caption: " + request.getCaption());
             if (request.getImageBase64() != null) {
@@ -97,7 +96,7 @@ public class PostController {
             } else {
                 System.out.println("No images provided");
             }
-            
+
             Post createdPost = postService.createPost(request);
             return ResponseEntity.ok(convertToPostResponse(createdPost));
         } catch (IOException e) {
@@ -137,6 +136,18 @@ public class PostController {
                 .map(this::convertToPostResponse)
                 .collect(Collectors.toList());
         return ResponseEntity.ok(postResponses);
+    }
+
+    @PostMapping("/save/{postId}/{userId}")
+    public ResponseEntity<String> savePost(@PathVariable Long postId, @PathVariable Long userId){
+        postService.savePost(postId, userId);
+        return ResponseEntity.ok("Save Successfully");
+    }
+
+    @GetMapping("/getAll/{userId}")
+    public ResponseEntity<List<PostSave>> getAllPostSaved(@PathVariable Long userId){
+        List<PostSave> postSaves = postService.getAllPostSavedByUser(userId);
+        return ResponseEntity.ok(postSaves);
     }
     
     // Helper method to convert Post to PostResponse
