@@ -139,15 +139,46 @@ public class PostController {
     }
 
     @PostMapping("/save/{postId}/{userId}")
-    public ResponseEntity<String> savePost(@PathVariable Long postId, @PathVariable Long userId){
-        postService.savePost(postId, userId);
-        return ResponseEntity.ok("Save Successfully");
+    public ResponseEntity<?> savePost(@PathVariable Long postId, @PathVariable Long userId){
+        try {
+            postService.savePost(postId, userId);
+            return ResponseEntity.ok(Map.of("message", "Post saved successfully"));
+        } catch (Exception e) {
+            return ResponseEntity.status(500).body(Map.of("error", e.getMessage()));
+        }
+    }
+
+    @DeleteMapping("/un-save/{postId}/{userId}")
+    public ResponseEntity<?> unsavePost(@PathVariable Long postId, @PathVariable Long userId){
+        try {
+            postService.unSavePost(postId, userId);
+            return ResponseEntity.ok(Map.of("message", "Post unsaved successfully"));
+        } catch (Exception e) {
+            return ResponseEntity.status(500).body(Map.of("error", e.getMessage()));
+        }
+    }
+    
+    @GetMapping("/is-saved/{postId}/{userId}")
+    public ResponseEntity<?> isPostSaved(@PathVariable Long postId, @PathVariable Long userId){
+        try {
+            boolean isSaved = postService.isPostSaved(postId, userId);
+            return ResponseEntity.ok(Map.of("saved", isSaved));
+        } catch (Exception e) {
+            return ResponseEntity.status(500).body(Map.of("error", e.getMessage()));
+        }
     }
 
     @GetMapping("/getAll/{userId}")
-    public ResponseEntity<List<PostSave>> getAllPostSaved(@PathVariable Long userId){
-        List<PostSave> postSaves = postService.getAllPostSavedByUser(userId);
-        return ResponseEntity.ok(postSaves);
+    public ResponseEntity<?> getAllPostSaved(@PathVariable Long userId){
+        try {
+            List<PostSave> postSaves = postService.getAllPostSavedByUser(userId);
+            if (postSaves == null) {
+                return ResponseEntity.notFound().build();
+            }
+            return ResponseEntity.ok(postSaves);
+        } catch (Exception e) {
+            return ResponseEntity.status(500).body(Map.of("error", e.getMessage()));
+        }
     }
     
     // Helper method to convert Post to PostResponse

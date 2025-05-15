@@ -92,21 +92,59 @@ public class PostService {
         return postRepository.findAllByOrderByCreatedAtDesc();
     }
 
+    @Transactional
     public void savePost(Long postId, Long userId){
-        Optional<User> user = userRepository.findById(userId);
-        Optional<Post> post = postRepository.findById(postId);
+        User user = userRepository.findById(userId)
+                .orElseThrow(() -> new RuntimeException("User not found with ID: " + userId));
+        
+        Post post = postRepository.findById(postId)
+                .orElseThrow(() -> new RuntimeException("Post not found with ID: " + postId));
 
-        PostSave postSave = new PostSave();
-
-        if (user.isPresent() && post.isPresent()){
-            postSave.setUser(user.get());
-            postSave.setPost(post.get());
+        // Check if already saved to prevent duplicates
+        if (postSaveRepository.existsByUserAndPost(user, post)) {
+            // Post is already saved - we could return a flag or throw an exception
+            // For now, we'll just return without creating a duplicate
+            return;
         }
+        
+        PostSave postSave = new PostSave();
+        postSave.setUser(user);
+        postSave.setPost(post);
+        postSave.setSavedAt(new Date());
+        
         postSaveRepository.save(postSave);
+    }
+    
+    @Transactional
+    public void unSavePost(Long postId, Long userId) {
+        User user = userRepository.findById(userId)
+                .orElseThrow(() -> new RuntimeException("User not found with ID: " + userId));
+        
+        Post post = postRepository.findById(postId)
+                .orElseThrow(() -> new RuntimeException("Post not found with ID: " + postId));
+        
+        Optional<PostSave> postSave = postSaveRepository.findByUserAndPost(user, post);
+
+        if (postSave.isPresent()) {
+            postSaveRepository.delete(postSave.get());
+        }
+        // No need to throw exception if not found - it's already unsaved
+    }
+    
+    public boolean isPostSaved(Long postId, Long userId) {
+        User user = userRepository.findById(userId)
+                .orElseThrow(() -> new RuntimeException("User not found with ID: " + userId));
+        
+        Post post = postRepository.findById(postId)
+                .orElseThrow(() -> new RuntimeException("Post not found with ID: " + postId));
+        
+        return postSaveRepository.existsByUserAndPost(user, post);
     }
 
     public List<PostSave> getAllPostSavedByUser(Long userId){
-        Optional<User> user = userRepository.findById(userId);
-        return user.map(postSaveRepository::findByUserOrderBySavedAtDesc).orElse(null);
+        User user = userRepository.findById(userId)
+                .orElseThrow(() -> new RuntimeException("User not found with ID: " + userId));
+        
+        return postSaveRepository.findByUserOrderBySavedAtDesc(user);
     }
 } 
