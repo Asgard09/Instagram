@@ -5,6 +5,7 @@ import '../data/providers/auth_provider.dart';
 import '../data/providers/user_provider.dart';
 import '../models/user.dart';
 import 'edit_profile_screen.dart';
+import 'saved_posts_screen.dart';
 import 'package:http/http.dart' as http;
 import 'dart:convert';
 
@@ -24,10 +25,10 @@ class _ProfileScreenState extends State<ProfileScreen> {
   String get serverBaseUrl {
     if (kIsWeb) {
       // Use the specific IP for web
-      return 'http://172.22.98.43:8080';
+      return 'http://192.168.100.23:8080';
     } else {
       // For mobile platforms
-      return 'http://172.22.98.43:8080';
+      return 'http://192.168.100.23:8080';
     }
   }
   
@@ -210,7 +211,9 @@ class _ProfileScreenState extends State<ProfileScreen> {
           ),
           IconButton(
             icon: const Icon(Icons.menu, color: Colors.white),
-            onPressed: () {},
+            onPressed: () {
+              _showMenuOptions(context);
+            },
           ),
         ],
       ),
@@ -382,5 +385,100 @@ class _ProfileScreenState extends State<ProfileScreen> {
         ),
       ],
     );
+  }
+
+  // Add this method to show menu options
+  void _showMenuOptions(BuildContext context) {
+    showModalBottomSheet(
+      context: context,
+      backgroundColor: Colors.black,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(15)),
+      ),
+      builder: (context) => Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          // Handle to drag the sheet
+          Container(
+            width: 40,
+            height: 4,
+            margin: const EdgeInsets.symmetric(vertical: 12),
+            decoration: BoxDecoration(
+              color: Colors.grey.shade600,
+              borderRadius: BorderRadius.circular(4),
+            ),
+          ),
+          
+          // Saved Posts Option
+          ListTile(
+            leading: const Icon(Icons.bookmark, color: Colors.white),
+            title: const Text('Saved Posts', style: TextStyle(color: Colors.white)),
+            onTap: () {
+              Navigator.pop(context); // Close the bottom sheet
+              _navigateToSavedPosts();
+            },
+          ),
+          
+          const Divider(color: Colors.grey, height: 1),
+          
+          // Logout Option
+          ListTile(
+            leading: const Icon(Icons.logout, color: Colors.white),
+            title: const Text('Logout', style: TextStyle(color: Colors.white)),
+            onTap: () {
+              Navigator.pop(context); // Close the bottom sheet
+              _showLogoutConfirmation();
+            },
+          ),
+          
+          const SizedBox(height: 20),
+        ],
+      ),
+    );
+  }
+  
+  void _navigateToSavedPosts() {
+    // We'll implement the SavedPostsScreen in the next step
+    Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (context) => const SavedPostsScreen(),
+      ),
+    );
+  }
+  
+  void _showLogoutConfirmation() {
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        backgroundColor: Colors.grey.shade900,
+        title: const Text('Logout', style: TextStyle(color: Colors.white)),
+        content: const Text(
+          'Are you sure you want to logout?',
+          style: TextStyle(color: Colors.white70),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: const Text('Cancel', style: TextStyle(color: Colors.grey)),
+          ),
+          TextButton(
+            onPressed: () {
+              Navigator.pop(context);
+              _logout();
+            },
+            child: const Text('Logout', style: TextStyle(color: Colors.red)),
+          ),
+        ],
+      ),
+    );
+  }
+  
+  void _logout() {
+    // Clear the auth token
+    Provider.of<AuthProvider>(context, listen: false).setToken(null);
+    
+    // Navigate to login screen
+    Navigator.of(context).pushNamedAndRemoveUntil('/login', (route) => false);
   }
 }
