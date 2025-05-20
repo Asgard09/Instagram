@@ -31,6 +31,7 @@ class _CommentsBottomSheetState extends State<CommentsBottomSheet> {
   bool _isLoading = false;
   List<Comment> _comments = [];
   String? _replyingTo;
+  bool _hasText = false;
 
   @override
   void initState() {
@@ -40,13 +41,25 @@ class _CommentsBottomSheetState extends State<CommentsBottomSheet> {
     } else {
       _loadComments();
     }
+    
+    _commentController.addListener(_updateTextState);
   }
 
   @override
   void dispose() {
+    _commentController.removeListener(_updateTextState);
     _commentController.dispose();
     _focusNode.dispose();
     super.dispose();
+  }
+
+  void _updateTextState() {
+    final hasText = _commentController.text.trim().isNotEmpty;
+    if (hasText != _hasText) {
+      setState(() {
+        _hasText = hasText;
+      });
+    }
   }
 
   Future<void> _loadComments() async {
@@ -57,7 +70,7 @@ class _CommentsBottomSheetState extends State<CommentsBottomSheet> {
     try {
       final token = Provider.of<AuthProvider>(context, listen: false).token;
       final response = await http.get(
-        Uri.parse('http://172.22.98.43:8080/api/comments/post/${widget.postId}'),
+        Uri.parse('http://192.168.100.23:8080/api/comments/post/${widget.postId}'),
         headers: {
           'Authorization': 'Bearer $token',
           'Content-Type': 'application/json',
@@ -92,7 +105,7 @@ class _CommentsBottomSheetState extends State<CommentsBottomSheet> {
   }
 
   Future<void> _submitComment() async {
-    if (_commentController.text.trim().isEmpty || _isSubmitting) return;
+    if (!_hasText || _isSubmitting) return;
 
     setState(() {
       _isSubmitting = true;
@@ -105,7 +118,7 @@ class _CommentsBottomSheetState extends State<CommentsBottomSheet> {
           : _commentController.text.trim();
 
       final response = await http.post(
-        Uri.parse('http://172.22.98.43:8080/api/comments/post/${widget.postId}'),
+        Uri.parse('http://192.168.100.23:8080/api/comments/post/${widget.postId}'),
         headers: {
           'Authorization': 'Bearer $token',
           'Content-Type': 'application/json',
@@ -146,6 +159,11 @@ class _CommentsBottomSheetState extends State<CommentsBottomSheet> {
     });
     _focusNode.requestFocus();
     _commentController.text = '@$username ';
+    
+    // Update _hasText state immediately when starting a reply
+    setState(() {
+      _hasText = true;
+    });
   }
 
   @override
@@ -230,7 +248,7 @@ class _CommentsBottomSheetState extends State<CommentsBottomSheet> {
                         comment: comment,
                         index: index,
                         onReply: () => _startReply(comment.username),
-                        serverBaseUrl: 'http://172.22.98.43:8080', // Pass base URL
+                        serverBaseUrl: 'http://192.168.100.23:8080', // Pass base URL
                       );
                     },
                   ),
@@ -256,6 +274,7 @@ class _CommentsBottomSheetState extends State<CommentsBottomSheet> {
                           setState(() {
                             _replyingTo = null;
                             _commentController.clear();
+                            _hasText = false;
                           });
                         },
                         color: Colors.blue,
@@ -277,7 +296,7 @@ class _CommentsBottomSheetState extends State<CommentsBottomSheet> {
                     crossAxisAlignment: CrossAxisAlignment.end,
                     children: [
                       widget.currentUserAvatar != null
-                          ? _buildAvatar(widget.currentUserAvatar!, 'http://172.22.98.43:8080')
+                          ? _buildAvatar(widget.currentUserAvatar!, 'http://192.168.100.23:8080')
                           : const CircleAvatar(
                         radius: 18,
                         backgroundColor: Colors.grey,
@@ -292,6 +311,7 @@ class _CommentsBottomSheetState extends State<CommentsBottomSheet> {
                           maxLines: 5,
                           minLines: 1,
                           textCapitalization: TextCapitalization.sentences,
+                          onChanged: (_) => setState(() {}),
                           decoration: InputDecoration(
                             hintText: 'Add a comment...',
                             hintStyle: TextStyle(color: Colors.grey.shade400),
@@ -310,11 +330,11 @@ class _CommentsBottomSheetState extends State<CommentsBottomSheet> {
                       ),
                       const SizedBox(width: 8),
                       TextButton(
-                        onPressed: _commentController.text.trim().isEmpty
+                        onPressed: !_hasText
                             ? null
                             : _submitComment,
                         style: TextButton.styleFrom(
-                          backgroundColor: _commentController.text.trim().isEmpty
+                          backgroundColor: !_hasText
                               ? Colors.blue.withOpacity(0.3)
                               : Colors.blue,
                           shape: RoundedRectangleBorder(
