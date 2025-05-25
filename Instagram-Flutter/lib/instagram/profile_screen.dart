@@ -8,6 +8,7 @@ import 'edit_profile_screen.dart';
 import 'saved_posts_screen.dart';
 import 'package:http/http.dart' as http;
 import 'dart:convert';
+import 'login_screen.dart';
 
 class ProfileScreen extends StatefulWidget {
   const ProfileScreen({Key? key}) : super(key: key);
@@ -25,10 +26,10 @@ class _ProfileScreenState extends State<ProfileScreen> {
   String get serverBaseUrl {
     if (kIsWeb) {
       // Use the specific IP for web
-      return 'http://192.168.100.23:8080';
+      return 'http://192.168.1.4:8080';
     } else {
       // For mobile platforms
-      return 'http://192.168.100.23:8080';
+      return 'http://192.168.1.4:8080';
     }
   }
   
@@ -478,7 +479,12 @@ class _ProfileScreenState extends State<ProfileScreen> {
     // Clear the auth token
     Provider.of<AuthProvider>(context, listen: false).setToken(null);
     
-    // Navigate to login screen
-    Navigator.of(context).pushNamedAndRemoveUntil('/login', (route) => false);
+    // Navigate to login screen using MaterialPageRoute instead of named route
+    Navigator.of(context).pushAndRemoveUntil(
+      MaterialPageRoute(
+        builder: (context) => const LoginScreen(),
+      ),
+      (route) => false,
+    );
   }
 }
