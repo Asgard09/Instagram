@@ -83,7 +83,7 @@ public class AuthenticationServiceImpl implements AuthenticationService {
         }
     }
 
-    public void revokeAllTokenByUser(User user) {
+    private void revokeAllTokenByUser(User user) {
         List<Token> validTokenListByUser = tokenRepository.findAllAccessTokensByUser(user.getUserId());
 
         if (!validTokenListByUser.isEmpty()){

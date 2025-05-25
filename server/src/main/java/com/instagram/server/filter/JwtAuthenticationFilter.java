@@ -1,7 +1,7 @@
 package com.instagram.server.filter;
 
 import com.instagram.server.service.Impl.JwtServiceImpl;
-import com.instagram.server.service.UserDetailsServiceImpl;
+import com.instagram.server.service.Impl.UserDetailsServiceImpl;
 import jakarta.annotation.Nonnull;
 import jakarta.servlet.FilterChain;
 import jakarta.servlet.ServletException;

@@ -8,6 +8,4 @@ public interface AuthenticationService {
     AuthenticationResponse register(AuthRequest request);
     void saveUserToken(String jwt, User user);
     AuthenticationResponse authenticate(AuthRequest request);
-    void revokeAllTokenByUser(User user);
-
 }

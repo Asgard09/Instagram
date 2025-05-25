@@ -1,10 +1,9 @@
 package com.instagram.server.config;
 
 import com.instagram.server.filter.JwtAuthenticationFilter;
-import com.instagram.server.service.UserDetailsServiceImpl;
+import com.instagram.server.service.Impl.UserDetailsServiceImpl;
 
 import java.util.Arrays;
-import java.util.List;
 
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
