@@ -1,7 +1,7 @@
 package com.instagram.server.filter;
 
-import com.instagram.server.service.Impl.JwtServiceImpl;
 import com.instagram.server.service.Impl.UserDetailsServiceImpl;
+import com.instagram.server.service.JwtService;
 import jakarta.annotation.Nonnull;
 import jakarta.servlet.FilterChain;
 import jakarta.servlet.ServletException;
@@ -19,11 +19,11 @@ import java.io.IOException;
 @Component
 public class JwtAuthenticationFilter extends OncePerRequestFilter {
 
-    private final JwtServiceImpl jwtService;
+    private final JwtService jwtService;
 
     private final UserDetailsServiceImpl userDetailsService;
 
-    public JwtAuthenticationFilter(JwtServiceImpl jwtService, UserDetailsServiceImpl userDetailsService) {
+    public JwtAuthenticationFilter(JwtService jwtService, UserDetailsServiceImpl userDetailsService) {
         this.jwtService = jwtService;
         this.userDetailsService = userDetailsService;
     }
