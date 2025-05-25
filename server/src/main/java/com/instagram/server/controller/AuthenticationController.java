@@ -3,6 +3,7 @@ package com.instagram.server.controller;
 import com.instagram.server.dto.request.AuthRequest;
 import com.instagram.server.dto.response.AuthenticationResponse;
 import com.instagram.server.service.AuthenticationService;
+import com.instagram.server.service.Impl.AuthenticationServiceImpl;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
@@ -12,7 +13,7 @@ public class AuthenticationController {
 
     private final AuthenticationService authenticationService;
 
-    public AuthenticationController(AuthenticationService authenticationService) {
+    public AuthenticationController(AuthenticationServiceImpl authenticationService) {
         this.authenticationService = authenticationService;
     }
 
