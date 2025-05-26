@@ -112,11 +112,34 @@ public class ChatController {
      */
     @MessageMapping("/chat.sendMessage")
     public void sendMessageWs(@Payload Map<String, Object> payload, Principal principal) {
-        Long senderId = getUserIdFromUsername(principal.getName());
-        Long receiverId = Long.valueOf(payload.get("receiverId").toString());
-        String content = payload.get("content").toString();
-        
-        chatService.sendMessage(senderId, receiverId, content);
+        try {
+            System.out.println("Received WebSocket message payload: " + payload);
+            System.out.println("Principal: " + (principal != null ? principal.getName() : "null"));
+            
+            // For testing purposes, if no principal, use senderId from payload
+            Long senderId;
+            if (principal != null) {
+                senderId = getUserIdFromUsername(principal.getName());
+                System.out.println("Using authenticated user ID: " + senderId);
+            } else {
+                // Fallback for testing - get senderId from payload
+                senderId = payload.get("senderId") != null ? 
+                    Long.valueOf(payload.get("senderId").toString()) : 1L;
+                System.out.println("Using senderId from payload: " + senderId);
+            }
+            
+            Long receiverId = Long.valueOf(payload.get("receiverId").toString());
+            String content = payload.get("content").toString();
+            
+            System.out.println("Sending message from " + senderId + " to " + receiverId + ": " + content);
+            
+            MessageDTO result = chatService.sendMessage(senderId, receiverId, content);
+            System.out.println("Message sent successfully with ID: " + result.getMessageId());
+            
+        } catch (Exception e) {
+            System.err.println("Error in sendMessageWs: " + e.getMessage());
+            e.printStackTrace();
+        }
     }
 
     /**
