@@ -60,13 +60,41 @@ class ChatProvider extends ChangeNotifier {
       // Listen for new messages
       _messageSubscription = _webSocketService.messageStream.listen((message) {
         print('Received message from senderId: ${message.senderId}, receiverId: ${message.receiverId}');
+        print('Current user ID: $userId');
+        print('Current chat other user ID: ${_currentChat?.otherUser.userId}');
+        
         // Add message to current chat if it's from the same chat
-        if (_currentChat != null && 
-            (_currentChat!.otherUser.userId == message.senderId || 
-             _currentChat!.otherUser.userId == message.receiverId)) {
-          print('Adding message to current chat: ${_currentChat!.chatId}');
-          _currentChat!.recentMessages.add(message);
-          notifyListeners();
+        if (_currentChat != null) {
+          // Check if this message belongs to the current chat
+          bool belongsToCurrentChat = false;
+          
+          // Case 1: Message sent by current user to the other user
+          if (message.senderId == userId && message.receiverId == _currentChat!.otherUser.userId) {
+            belongsToCurrentChat = true;
+            print('Message sent by current user to other user in current chat');
+          }
+          
+          // Case 2: Message received by current user from the other user
+          if (message.senderId == _currentChat!.otherUser.userId && message.receiverId == userId) {
+            belongsToCurrentChat = true;
+            print('Message received by current user from other user in current chat');
+          }
+          
+          if (belongsToCurrentChat) {
+            print('Adding message to current chat: ${_currentChat!.chatId}');
+            
+            // Remove any temporary message with the same content to avoid duplicates
+            _currentChat!.recentMessages.removeWhere((msg) => 
+              msg.messageId == null && 
+              msg.content == message.content && 
+              msg.senderId == message.senderId
+            );
+            
+            _currentChat!.recentMessages.add(message);
+            notifyListeners();
+          } else {
+            print('Message does not belong to current chat');
+          }
         }
         
         // Update chat list with new message

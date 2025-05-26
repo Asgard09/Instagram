@@ -10,9 +10,9 @@ class WebSocketService {
   // Server base URL
   String get _baseUrl {
     if (kIsWeb) {
-      return 'ws://172.22.98.43:8080';
+      return 'ws://192.168.100.23:8080';
     } else {
-      return 'ws://172.22.98.43:8080';
+      return 'ws://192.168.100.23:8080';
     }
   }
 
@@ -171,13 +171,15 @@ class WebSocketService {
       return;
     }
 
+    // Include senderId in the message payload - this is crucial!
     final message = {
+      'senderId': _userId, // Add the sender ID
       'receiverId': receiverId,
       'content': content,
       'timestamp': DateTime.now().toUtc().toIso8601String(), // Include UTC timestamp
     };
 
-    print('Sending message via WebSocket to user $receiverId: $content');
+    print('Sending message via WebSocket from user $_userId to user $receiverId: $content');
     print('WebSocket connection status: $_connected');
     print('Message JSON: ${json.encode(message)}');
     print('Destination: /app/chat.sendMessage');
