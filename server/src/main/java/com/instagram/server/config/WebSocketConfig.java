@@ -41,7 +41,7 @@ public class WebSocketConfig implements WebSocketMessageBrokerConfigurer {
         registry.setApplicationDestinationPrefixes("/app");
         
         // Set prefix for endpoints the client will subscribe to receive messages from
-        registry.enableSimpleBroker("/user", "/topic", "/queue");
+        registry.enableSimpleBroker("/user", "/topic", "/queue", "/notifications");
         
         // Enable user destination prefixes
         registry.setUserDestinationPrefix("/user");

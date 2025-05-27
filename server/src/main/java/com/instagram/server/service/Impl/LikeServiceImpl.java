@@ -7,7 +7,9 @@ import com.instagram.server.repository.LikeRepository;
 import com.instagram.server.repository.PostRepository;
 import com.instagram.server.repository.UserRepository;
 import com.instagram.server.service.LikeService;
+import com.instagram.server.service.NotificationService;
 import jakarta.transaction.Transactional;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.stereotype.Service;
@@ -16,17 +18,21 @@ import java.util.Date;
 import java.util.List;
 import java.util.Optional;
 
+@Slf4j
 @Service
 public class LikeServiceImpl implements LikeService {
     
     private final LikeRepository likeRepository;
     private final PostRepository postRepository;
     private final UserRepository userRepository;
+    private final NotificationService notificationService;
 
-    public LikeServiceImpl(LikeRepository likeRepository, PostRepository postRepository, UserRepository userRepository) {
+    public LikeServiceImpl(LikeRepository likeRepository, PostRepository postRepository,
+                           UserRepository userRepository, NotificationService notificationService) {
         this.likeRepository = likeRepository;
         this.postRepository = postRepository;
         this.userRepository = userRepository;
+        this.notificationService = notificationService;
     }
     
     /**
@@ -54,8 +60,17 @@ public class LikeServiceImpl implements LikeService {
         like.setUser(user);
         like.setPost(post);
         like.setCreatedAt(new Date());
-        
-        return likeRepository.save(like);
+
+        Like savedLike = likeRepository.save(like);
+
+        // Send notification to a post-owner
+        try {
+            notificationService.sendLikeNotification(postId, user.getUserId(), post.getUser().getUserId());
+        } catch (Exception e) {
+            log.error("Error sending like notification: {}", e.getMessage(), e);
+        }
+
+        return savedLike;
     }
     
     /**

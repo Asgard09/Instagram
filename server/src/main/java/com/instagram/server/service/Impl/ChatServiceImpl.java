@@ -120,7 +120,7 @@ public class ChatServiceImpl implements ChatService {
                     return chatRepository.save(newChat);
                 });
         
-        // Create message
+        // Create a message
         Message message = new Message();
         message.setContent(content);
         message.setSender(sender);
@@ -134,7 +134,7 @@ public class ChatServiceImpl implements ChatService {
         // Save message
         message = messageRepository.save(message);
         
-        // Add message to chat
+        // Add a message to chat
         chat.getMessages().add(0, message); // Add at beginning for most recent first
         chat.setUpdatedAt(now);
         chatRepository.save(chat);
@@ -142,7 +142,7 @@ public class ChatServiceImpl implements ChatService {
         // Convert to DTO
         MessageDTO messageDTO = MessageDTO.fromEntity(message);
         
-        // Send message via WebSocket
+        // Send a message via WebSocket
         messagingTemplate.convertAndSendToUser(
                 receiverId.toString(),
                 "/queue/messages",
