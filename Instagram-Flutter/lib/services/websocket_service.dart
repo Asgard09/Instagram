@@ -5,6 +5,7 @@ import 'package:stomp_dart_client/stomp.dart';
 import 'package:stomp_dart_client/stomp_config.dart';
 import 'package:stomp_dart_client/stomp_frame.dart';
 import '../models/message.dart';
+import '../models/notification.dart';
 
 class WebSocketService {
   // Server base URL
@@ -18,8 +19,13 @@ class WebSocketService {
 
   StompClient? _stompClient;
   bool _connected = false;
+  /*Note
+  * implementing real-time features --> use StreamController
+  * broadcast() is the multi-subscriber mode of Stream in Dart
+  */
   final _messageController = StreamController<Message>.broadcast();
   final _readReceiptController = StreamController<int>.broadcast();
+  final _notificationController = StreamController<Notification>.broadcast();
   
   // Authentication info
   String? _token;
@@ -34,6 +40,9 @@ class WebSocketService {
   
   // Stream for read receipts
   Stream<int> get readReceiptStream => _readReceiptController.stream;
+
+  // Stream for notifications
+  Stream<Notification> get notificationStream => _notificationController.stream;
 
   // Connection status
   bool get isConnected => _connected;
@@ -110,6 +119,23 @@ class WebSocketService {
               }
             },
           );
+
+          // Subscribe to notifications
+          _stompClient!.subscribe(
+            destination: '/user/$userId/queue/notifications',
+            callback: (frame) {
+              if (frame.body != null) {
+                print('Received notification: ${frame.body}');
+                try {
+                  final notificationJson = json.decode(frame.body!);
+                  final notification = Notification.fromJson(notificationJson);
+                  _notificationController.add(notification);
+                } catch (e) {
+                  print('Error processing notification: $e');
+                }
+              }
+            },
+          );
         },
         onWebSocketError: (dynamic error) {
           print('WebSocket error: $error');
@@ -171,15 +197,13 @@ class WebSocketService {
       return;
     }
 
-    // Include senderId in the message payload - this is crucial!
     final message = {
-      'senderId': _userId, // Add the sender ID
       'receiverId': receiverId,
       'content': content,
       'timestamp': DateTime.now().toUtc().toIso8601String(), // Include UTC timestamp
     };
 
-    print('Sending message via WebSocket from user $_userId to user $receiverId: $content');
+    print('Sending message via WebSocket to user $receiverId: $content');
     print('WebSocket connection status: $_connected');
     print('Message JSON: ${json.encode(message)}');
     print('Destination: /app/chat.sendMessage');
@@ -237,5 +261,6 @@ class WebSocketService {
     disconnect();
     _messageController.close();
     _readReceiptController.close();
+    _notificationController.close();
   }
 } 
