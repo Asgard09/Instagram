@@ -7,6 +7,7 @@ import 'package:practice_widgets/instagram/user_search_screen.dart';
 import 'package:provider/provider.dart';
 import '../data/providers/posts_provider.dart';
 import '../data/providers/auth_provider.dart';
+import '../data/providers/user_provider.dart';
 
 import 'home_screen.dart';
 
@@ -41,6 +42,26 @@ class _MainScreenState extends State<MainScreen> {
       const Scaffold(body: Center(child: Text('Reels', style: TextStyle(color: Colors.white)))),
       const ProfileScreen(),
     ]);
+
+    // Load user data on app startup
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      _loadUserData();
+    });
+  }
+
+  Future<void> _loadUserData() async {
+    final authProvider = Provider.of<AuthProvider>(context, listen: false);
+    final userProvider = Provider.of<UserProvider>(context, listen: false);
+    
+    if (authProvider.token != null && userProvider.user == null) {
+      print('Loading user data on app startup...');
+      try {
+        await userProvider.fetchCurrentUser(authProvider.token!);
+        print('User data loaded: ${userProvider.user?.username} (ID: ${userProvider.user?.userId})');
+      } catch (e) {
+        print('Failed to load user data on startup: $e');
+      }
+    }
   }
 
   // List of icons for the bottom navigation

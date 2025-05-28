@@ -43,10 +43,89 @@ class MyApp extends StatelessWidget {
     
     return MaterialApp(
         debugShowCheckedModeBanner: false,
-        title: 'Flutter Demo',
+        title: 'Instagram',
         theme: ThemeData(
           primarySwatch: Colors.blue,
         ),
-        home: LoginScreen());
+        home: AppInitializer());
+  }
+}
+
+/*Note
+* Save user token when reload
+*/
+class AppInitializer extends StatefulWidget {
+  @override
+  _AppInitializerState createState() => _AppInitializerState();
+}
+
+class _AppInitializerState extends State<AppInitializer>{
+  bool _isInitializing = true;
+
+  @override
+  void initState(){
+    super.initState();
+    _initializeApp();
+  }
+
+  Future<void> _initializeApp() async {
+    final authProvider = Provider.of<AuthProvider>(context, listen: false);
+    final userProvider = Provider.of<UserProvider>(context, listen: false);
+
+    try {
+      // Load token from storage
+      await authProvider.loadToken();
+
+      // If token exists and is valid, load user data
+      if (authProvider.isTokenValid) {
+        print('Valid token found, loading user data...');
+        try {
+          await userProvider.fetchCurrentUser(authProvider.token!);
+          print('User data loaded successfully: ${userProvider.user?.username}');
+        } catch (e) {
+          print('Failed to load user data: $e');
+          // Clear invalid token
+          await authProvider.setToken(null);
+        }
+      }
+    } catch (e) {
+      print('Error during app initialization: $e');
+    }
+
+    setState(() {
+      _isInitializing = false;
+    });
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    if (_isInitializing) {
+      return Scaffold(
+        backgroundColor: Colors.black,
+        body: Center(
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              CircularProgressIndicator(color: Colors.white),
+              SizedBox(height: 16),
+              Text(
+                'Loading...',
+                style: TextStyle(color: Colors.white),
+              ),
+            ],
+          ),
+        ),
+      );
+    }
+
+    return Consumer<AuthProvider>(
+        builder: (context, authProvider, child) {
+          if (authProvider.isTokenValid) {
+            return MainScreen();
+          } else {
+            return LoginScreen();
+          }
+        }
+    );
   }
 }
