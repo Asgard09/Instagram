@@ -138,21 +138,15 @@ class _ChatListScreenState extends State<ChatListScreen> {
     int? messageSenderId;
     DateTime? messageTime;
     
-    if (chat.recentMessages.isNotEmpty) {
-      // Sort messages by time (oldest first)
-      final sortedMessages = List<Message>.from(chat.recentMessages)
-        ..sort((a, b) => a.createdAt.compareTo(b.createdAt));
-      
-      // Get earliest message
-      final earliestMessage = sortedMessages.first;
-      messageContent = earliestMessage.content;
-      messageSenderId = earliestMessage.senderId;
-      messageTime = earliestMessage.createdAt;
-    } else if (chat.lastMessageContent != null) {
+    if (chat.lastMessageContent != null) {
       // Fallback to lastMessageContent if available
       messageContent = chat.lastMessageContent!;
       messageSenderId = chat.lastMessageSenderId;
       messageTime = chat.lastMessageTime;
+    }else{
+      messageContent = 'Start a conversation';
+      messageSenderId = null;
+      messageTime = null;
     }
     
     return ListTile(
@@ -247,7 +241,7 @@ class _ChatListScreenState extends State<ChatListScreen> {
     if (profilePicture.startsWith('http')) {
       return profilePicture;
     } else {
-      final baseUrl = 'http://172.22.98.43:8080';
+      final baseUrl = 'http://192.168.1.10:8080';
       return '$baseUrl/uploads/$profilePicture';
     }
   }

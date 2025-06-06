@@ -40,7 +40,7 @@ public class ChatDTO {
         // Set last message info if chat has messages
         List<Message> messages = chat.getMessages();
         if (messages != null && !messages.isEmpty()) {
-            Message lastMessage = messages.get(0); // Assuming messages are ordered by date desc
+            Message lastMessage = messages.get(messages.size()-1); // Assuming messages are ordered by date desc
             dto.setLastMessageTime(lastMessage.getCreatedAt());
             dto.setLastMessageContent(lastMessage.getContent());
             dto.setLastMessageSenderId(lastMessage.getSender().getUserId());

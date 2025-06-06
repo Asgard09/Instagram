@@ -33,10 +33,14 @@ class ChatProvider extends ChangeNotifier {
   // Ensure WebSocket is connected with valid token
   Future<bool> ensureWebSocketConnected(String token, int userId) async {
     if (!_webSocketService.isConnected) {
-      print('WebSocket not connected. Initializing...');
+      if (kDebugMode) {
+        print('WebSocket not connected. Initializing...');
+      }
       return await initWebSocket(token, userId);
     }
-    print('WebSocket already connected');
+    if (kDebugMode) {
+      print('WebSocket already connected');
+    }
     return true;
   }
   
@@ -59,9 +63,11 @@ class ChatProvider extends ChangeNotifier {
       
       // Listen for new messages
       _messageSubscription = _webSocketService.messageStream.listen((message) {
-        print('Received message from senderId: ${message.senderId}, receiverId: ${message.receiverId}');
-        print('Current user ID: $userId');
-        print('Current chat other user ID: ${_currentChat?.otherUser.userId}');
+        if (kDebugMode) {
+          print('Received message from senderId: ${message.senderId}, receiverId: ${message.receiverId}');
+          print('Current user ID: $userId');
+          print('Current chat other user ID: ${_currentChat?.otherUser.userId}');
+        }
         
         // Add message to current chat if it's from the same chat
         if (_currentChat != null) {
@@ -71,7 +77,9 @@ class ChatProvider extends ChangeNotifier {
           // Case 1: Message sent by current user to the other user
           if (message.senderId == userId && message.receiverId == _currentChat!.otherUser.userId) {
             belongsToCurrentChat = true;
-            print('Message sent by current user to other user in current chat');
+            if (kDebugMode) {
+              print('Message sent by current user to other user in current chat');
+            }
           }
           
           // Case 2: Message received by current user from the other user
@@ -204,7 +212,9 @@ class ChatProvider extends ChangeNotifier {
         return null;
       } else {
         // Fallback to HTTP if WebSocket is not connected
-        print('WebSocket not connected, sending via HTTP');
+        if (kDebugMode) {
+          print('WebSocket not connected, sending via HTTP');
+        }
         return await _chatService.sendMessage(receiverId, content, token);
       }
     } catch (e) {
