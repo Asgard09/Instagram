@@ -21,6 +21,7 @@ import java.util.List;
 import java.util.Optional;
 
 @Service
+@SuppressWarnings("unused")
 public class PostServiceImpl implements PostService {
 
     private final PostRepository postRepository;

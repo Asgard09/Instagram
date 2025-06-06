@@ -16,6 +16,7 @@ import java.util.Base64;
 import java.util.UUID;
 
 @Service
+@SuppressWarnings("unused")
 public class FileStorageServiceImpl implements FileStorageService {
 
     @Value("${app.file.upload-dir:uploads}")
@@ -65,7 +66,7 @@ public class FileStorageServiceImpl implements FileStorageService {
             extension = ".tmp";
         }
         
-        filename = UUID.randomUUID().toString() + extension;
+        filename = UUID.randomUUID() + extension;
         filePath = Paths.get(dirPath.toString(), filename);
 
         // Check if it's a base64 image or a URL/blob reference
@@ -75,15 +76,15 @@ public class FileStorageServiceImpl implements FileStorageService {
                 // Extract the base64 part after the comma
                 int commaIndex = imageData.indexOf(",");
                 if (commaIndex != -1) {
-                    String base64Data = imageData.substring(commaIndex + 1);
+                    StringBuilder base64Data = new StringBuilder(imageData.substring(commaIndex + 1));
                     
                     // Remove potential line breaks that can cause decoding issues
-                    base64Data = base64Data.replaceAll("\\s", "");
+                    base64Data = new StringBuilder(base64Data.toString().replaceAll("\\s", ""));
                     
                     System.out.println("Attempting to decode base64 data of length: " + base64Data.length());
                     
                     try {
-                        byte[] imageBytes = Base64.getDecoder().decode(base64Data);
+                        byte[] imageBytes = Base64.getDecoder().decode(base64Data.toString());
                         System.out.println("Successfully decoded " + imageBytes.length + " bytes");
                         
                         try (FileOutputStream fos = new FileOutputStream(filePath.toFile())) {
@@ -97,10 +98,10 @@ public class FileStorageServiceImpl implements FileStorageService {
                         try {
                             // Add padding if needed
                             while (base64Data.length() % 4 != 0) {
-                                base64Data += "=";
+                                base64Data.append("=");
                             }
                             
-                            byte[] imageBytes = Base64.getDecoder().decode(base64Data);
+                            byte[] imageBytes = Base64.getDecoder().decode(base64Data.toString());
                             try (FileOutputStream fos = new FileOutputStream(filePath.toFile())) {
                                 fos.write(imageBytes);
                                 System.out.println("Successfully wrote image after padding fix to: " + filePath);
@@ -108,7 +109,7 @@ public class FileStorageServiceImpl implements FileStorageService {
                         } catch (Exception ex) {
                             System.err.println("Final base64 decoding attempt failed: " + ex.getMessage());
                             // Create a valid test image instead of returning an error path
-                            return createTestImage(directory, "base64-error-" + UUID.randomUUID().toString() + ".jpg");
+                            return createTestImage(directory, "base64-error-" + UUID.randomUUID() + ".jpg");
                         }
                     }
                 } else {
@@ -128,12 +129,12 @@ public class FileStorageServiceImpl implements FileStorageService {
                     
                     // No comma found and couldn't fix, create test image
                     System.err.println("Invalid data URL format: " + imageData.substring(0, Math.min(50, imageData.length())) + "...");
-                    return createTestImage(directory, "invalid-format-" + UUID.randomUUID().toString() + ".jpg");
+                    return createTestImage(directory, "invalid-format-" + UUID.randomUUID() + ".jpg");
                 }
             } catch (IllegalArgumentException e) {
                 // Base64 decoding failed, create valid test image
                 System.err.println("Base64 decoding error: " + e.getMessage());
-                return createTestImage(directory, "decoding-error-" + UUID.randomUUID().toString() + ".jpg");
+                return createTestImage(directory, "decoding-error-" + UUID.randomUUID() + ".jpg");
             }
         } else if (imageData.startsWith("blob:")) {
             // Check if it's a string parameter stripped of quotes by the controller
@@ -147,7 +148,7 @@ public class FileStorageServiceImpl implements FileStorageService {
             System.err.println("Received blob URL that can't be processed: " + imageData);
             
             // Create a valid test image for blob URLs
-            return createTestImage(directory, "blob-test-" + UUID.randomUUID().toString() + ".jpg");
+            return createTestImage(directory, "blob-test-" + UUID.randomUUID() + ".jpg");
         } else if (imageData.startsWith("http")) {
             try {
                 // Try to download the image from the URL
@@ -187,17 +188,17 @@ public class FileStorageServiceImpl implements FileStorageService {
                     }
                 } else {
                     System.err.println("Failed to download image from URL: " + imageData + " (Status code: " + responseCode + ")");
-                    return createTestImage(directory, "http-error-" + UUID.randomUUID().toString() + ".jpg");
+                    return createTestImage(directory, "http-error-" + UUID.randomUUID() + ".jpg");
                 }
             } catch (Exception e) {
                 System.err.println("Failed to download from URL: " + imageData + ", Error: " + e.getMessage());
-                return createTestImage(directory, "http-error-" + UUID.randomUUID().toString() + ".jpg");
+                return createTestImage(directory, "http-error-" + UUID.randomUUID() + ".jpg");
             }
         } else {
             // Check if it looks like a JSON string that wasn't properly parsed
             if (imageData.contains("\"imageBase64\":")) {
                 System.err.println("Received what appears to be a JSON string instead of raw base64 data");
-                return createTestImage(directory, "json-error-" + UUID.randomUUID().toString() + ".jpg");
+                return createTestImage(directory, "json-error-" + UUID.randomUUID() + ".jpg");
             }
             
             // Try to clean the string in case it has whitespace or other formatting
@@ -222,7 +223,7 @@ public class FileStorageServiceImpl implements FileStorageService {
                 System.err.println("First 50 chars of input: " + 
                     cleanedBase64.substring(0, Math.min(50, cleanedBase64.length())));
                 
-                return createTestImage(directory, "base64-error-" + UUID.randomUUID().toString() + ".jpg");
+                return createTestImage(directory, "base64-error-" + UUID.randomUUID() + ".jpg");
             }
         }
 

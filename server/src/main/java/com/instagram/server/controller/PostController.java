@@ -6,6 +6,7 @@ import com.instagram.server.dto.response.PostResponse;
 import com.instagram.server.entity.Post;
 import com.instagram.server.entity.PostSave;
 import com.instagram.server.service.PostService;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
@@ -15,9 +16,11 @@ import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
 
+@Slf4j
 @RestController
 @RequestMapping("/api/posts")
 @CrossOrigin(origins = "*", maxAge = 3600)
+@SuppressWarnings("unused")
 public class PostController {
 
     private final PostService postService;
@@ -105,7 +108,6 @@ public class PostController {
                     .body("Error processing image: " + e.getMessage());
         } catch (Exception e) {
             System.err.println("Error creating post: " + e.getMessage());
-            e.printStackTrace();
             return ResponseEntity.status(500)
                     .body("Error creating post: " + e.getMessage());
         }

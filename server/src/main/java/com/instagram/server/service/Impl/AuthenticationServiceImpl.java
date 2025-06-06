@@ -17,6 +17,7 @@ import java.util.Date;
 import java.util.List;
 
 @Service
+@SuppressWarnings("unused")
 public class AuthenticationServiceImpl implements AuthenticationService {
     private final UserRepository userRepository;
     private final TokenRepository tokenRepository;
@@ -87,9 +88,7 @@ public class AuthenticationServiceImpl implements AuthenticationService {
         List<Token> validTokenListByUser = tokenRepository.findAllAccessTokensByUser(user.getUserId());
 
         if (!validTokenListByUser.isEmpty()){
-            validTokenListByUser.forEach(t->{
-                t.setLoggedOut(true);
-            });
+            validTokenListByUser.forEach(t-> t.setLoggedOut(true));
         }
 
         tokenRepository.saveAll(validTokenListByUser);

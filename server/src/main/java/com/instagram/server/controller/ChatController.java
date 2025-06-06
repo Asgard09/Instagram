@@ -5,10 +5,10 @@ import com.instagram.server.dto.MessageDTO;
 import com.instagram.server.entity.User;
 import com.instagram.server.repository.UserRepository;
 import com.instagram.server.service.ChatService;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.ResponseEntity;
 import org.springframework.messaging.handler.annotation.MessageMapping;
 import org.springframework.messaging.handler.annotation.Payload;
-import org.springframework.messaging.simp.SimpMessagingTemplate;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.web.bind.annotation.*;
@@ -17,20 +17,19 @@ import java.security.Principal;
 import java.util.List;
 import java.util.Map;
 
+@Slf4j
 @RestController
 @RequestMapping("/api/chats")
+@SuppressWarnings("unused")
 public class ChatController {
 
     private final ChatService chatService;
-    private final SimpMessagingTemplate messagingTemplate;
     private final UserRepository userRepository;
 
     public ChatController(
             ChatService chatService,
-            SimpMessagingTemplate messagingTemplate,
             UserRepository userRepository) {
         this.chatService = chatService;
-        this.messagingTemplate = messagingTemplate;
         this.userRepository = userRepository;
     }
 
@@ -108,7 +107,7 @@ public class ChatController {
     }
 
     /**
-     * WebSocket endpoint to send message
+     * WebSocket endpoint to send a message
      */
     @MessageMapping("/chat.sendMessage")
     public void sendMessageWs(@Payload Map<String, Object> payload, Principal principal) {
@@ -124,7 +123,7 @@ public class ChatController {
             } else {
                 // Fallback for testing - get senderId from payload
                 senderId = payload.get("senderId") != null ? 
-                    Long.valueOf(payload.get("senderId").toString()) : 1L;
+                    Long.parseLong(payload.get("senderId").toString()) : 1L;
                 System.out.println("Using senderId from payload: " + senderId);
             }
             
@@ -138,7 +137,7 @@ public class ChatController {
             
         } catch (Exception e) {
             System.err.println("Error in sendMessageWs: " + e.getMessage());
-            e.printStackTrace();
+            log.error("Error in sendMessageWs: {}", e.getMessage(), e);
         }
     }
 

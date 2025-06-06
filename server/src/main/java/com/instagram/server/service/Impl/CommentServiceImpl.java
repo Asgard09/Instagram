@@ -16,6 +16,7 @@ import java.util.Date;
 import java.util.List;
 
 @Service
+@SuppressWarnings("unused")
 public class CommentServiceImpl implements CommentService {
     
     private final CommentRepository commentRepository;
@@ -77,7 +78,7 @@ public class CommentServiceImpl implements CommentService {
         Comment comment = commentRepository.findById(commentId)
                 .orElseThrow(() -> new RuntimeException("Comment not found"));
         
-        // Check if user is the comment owner
+        // Check if the user is the comment owner
         if (!comment.getUser().getUserId().equals(user.getUserId())) {
             throw new RuntimeException("You can only delete your own comments");
         }

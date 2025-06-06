@@ -1,6 +1,5 @@
 package com.instagram.server.entity;
 
-import com.fasterxml.jackson.annotation.JsonIgnore;
 import jakarta.persistence.*;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
@@ -36,8 +35,4 @@ public class Message {
     @Column(name = "is_read", nullable = false)
     private boolean read = false;
 
-    @PrePersist
-    protected void onCreate() {
-        createdAt = new Date();
-    }
 } 

@@ -30,7 +30,7 @@ public class Token {
     @ManyToOne
     @JoinColumn(name = "user_id")
     @JsonIdentityInfo(generator = ObjectIdGenerators.PropertyGenerator.class, property = "userId")
-    @JsonIdentityReference(alwaysAsId = false)
+    @JsonIdentityReference()
     private User user;
 
 }

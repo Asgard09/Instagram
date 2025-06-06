@@ -1,5 +1,6 @@
 package com.instagram.server.config;
 
+import org.jetbrains.annotations.NotNull;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.web.servlet.config.annotation.CorsRegistry;
@@ -9,14 +10,15 @@ import java.nio.file.Path;
 import java.nio.file.Paths;
 
 @Configuration
+@SuppressWarnings("unused")
 public class WebConfig implements WebMvcConfigurer {
 
     @Value("${app.file.upload-dir:uploads}")
     private String uploadDir;
 
     @Override
-    public void addResourceHandlers(ResourceHandlerRegistry registry) {
-        // Convert to absolute path and ensure it ends with a slash
+    public void addResourceHandlers(@NotNull ResourceHandlerRegistry registry) {
+        // Convert to an absolute path and ensure it ends with a slash
         Path uploadsPath = Paths.get(uploadDir).toAbsolutePath();
         String uploadsDirPath = uploadsPath.toString().replace('\\', '/');
         if (!uploadsDirPath.endsWith("/")) {

@@ -23,12 +23,12 @@ public class Like {
     @ManyToOne
     @JoinColumn(name = "post_id")
     @JsonIdentityInfo(generator = ObjectIdGenerators.PropertyGenerator.class, property = "postId")
-    @JsonIdentityReference(alwaysAsId = false)
+    @JsonIdentityReference()
     private Post post;
 
     @ManyToOne
     @JoinColumn(name = "user_id")
     @JsonIdentityInfo(generator = ObjectIdGenerators.PropertyGenerator.class, property = "userId")
-    @JsonIdentityReference(alwaysAsId = false)
+    @JsonIdentityReference()
     private User user;
 }

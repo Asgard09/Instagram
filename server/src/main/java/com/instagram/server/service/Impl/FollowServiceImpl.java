@@ -15,6 +15,7 @@ import java.util.List;
 import java.util.Optional;
 
 @Service
+@SuppressWarnings("unused")
 public class FollowServiceImpl implements FollowService {
 
     private final FollowRepository followRepository;
@@ -93,7 +94,7 @@ public class FollowServiceImpl implements FollowService {
     }
 
     /**
-     * Check if specific user is following another user
+     * Check if a specific user is following another user
      */
     public boolean isUserFollowing(Long followerId, Long followeeId) {
         User follower = userRepository.findById((long) Math.toIntExact(followerId))
@@ -106,7 +107,7 @@ public class FollowServiceImpl implements FollowService {
     }
 
     /**
-     * Get followers count for a user
+     * Get followers to count for a user
      */
     public int getFollowersCount(Long userId) {
         User user = userRepository.findById((long) Math.toIntExact(userId))
@@ -116,7 +117,7 @@ public class FollowServiceImpl implements FollowService {
     }
 
     /**
-     * Get following count for a user
+     * Get the following count for a user
      */
     public int getFollowingCount(Long userId) {
         User user = userRepository.findById((long) Math.toIntExact(userId))
@@ -126,7 +127,7 @@ public class FollowServiceImpl implements FollowService {
     }
 
     /**
-     * Get posts count for a user
+     * Get posts to count for a user
      */
     public int getPostsCount(Long userId) {
         User user = userRepository.findById((long) Math.toIntExact(userId))

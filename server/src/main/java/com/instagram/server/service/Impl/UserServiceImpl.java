@@ -17,6 +17,7 @@ import java.util.Collections;
 import java.util.List;
 
 @Service
+@SuppressWarnings("unused")
 public class UserServiceImpl implements UserService {
     private final UserRepository userRepository;
     private final FileStorageService fileStorageService;

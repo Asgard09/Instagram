@@ -13,6 +13,7 @@ import java.util.stream.Collectors;
 @RestController
 @RequestMapping("/api/comments")
 @CrossOrigin(origins = "*", maxAge = 3600)
+@SuppressWarnings("unused")
 public class CommentController {
     
     private final CommentService commentService;

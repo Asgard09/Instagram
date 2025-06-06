@@ -19,6 +19,7 @@ import java.util.TimeZone;
 
 @Configuration
 @EnableWebSocketMessageBroker
+@SuppressWarnings("unused")
 public class WebSocketConfig implements WebSocketMessageBrokerConfigurer {
 
     @Override

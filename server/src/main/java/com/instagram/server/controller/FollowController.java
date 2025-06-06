@@ -16,6 +16,7 @@ import java.util.stream.Collectors;
 @RestController
 @RequestMapping("/api/follows")
 @CrossOrigin(origins = "*", maxAge = 3600)
+@SuppressWarnings("unused")
 public class FollowController {
     
     private final FollowService followService;
@@ -57,7 +58,7 @@ public class FollowController {
     }
     
     /**
-     * Check if current user is following a user
+     * Check if the current user is following a user
      */
     @GetMapping("/check/{userId}")
     public ResponseEntity<Map<String, Boolean>> checkFollowStatus(@PathVariable Long userId) {
@@ -90,7 +91,7 @@ public class FollowController {
     }
     
     /**
-     * Get following count
+     * Get the following count
      */
     @GetMapping("/following/count/{userId}")
     public ResponseEntity<Map<String, Integer>> getFollowingCount(@PathVariable Long userId) {

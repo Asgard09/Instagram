@@ -7,6 +7,7 @@ import com.instagram.server.dto.request.UpdateProfileImageRequest;
 import com.instagram.server.dto.request.UpdateUserRequest;
 import com.instagram.server.entity.User;
 import com.instagram.server.service.UserService;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.security.core.context.SecurityContextHolder;
@@ -18,9 +19,11 @@ import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
 
+@Slf4j
 @RestController
 @RequestMapping("/api/users")
 @CrossOrigin(origins = "*", maxAge = 3600)
+@SuppressWarnings("unused")
 public class UserController {
     private final UserService userService;
 
@@ -89,7 +92,7 @@ public class UserController {
                     .body("Error processing profile image: " + e.getMessage());
         } catch (Exception e) {
             System.err.println("Error updating profile: " + e.getMessage());
-            e.printStackTrace();
+            log.error("Error updating profile: {}", e.getMessage());
             return ResponseEntity.status(500)
                     .body("Error updating profile: " + e.getMessage());
         }
@@ -148,7 +151,7 @@ public class UserController {
             return ResponseEntity.ok(tagUsers);
         } catch (Exception e) {
             System.err.println("Error getting followers: " + e.getMessage());
-            e.printStackTrace();
+            log.error("Error getting followers: {}", e.getMessage());
             return ResponseEntity.status(500)
                     .body("Error getting followers: " + e.getMessage());
         }
@@ -174,7 +177,7 @@ public class UserController {
             
             return ResponseEntity.ok(results);
         } catch (Exception e) {
-            e.printStackTrace();
+            log.error("Error: {}", e.getMessage());
             return ResponseEntity.status(500).body(null);
         }
     }

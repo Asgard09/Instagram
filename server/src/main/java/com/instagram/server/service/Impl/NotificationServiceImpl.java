@@ -14,6 +14,7 @@ import java.time.LocalDateTime;
 
 @Slf4j
 @Service
+@SuppressWarnings("unused")
 public class NotificationServiceImpl implements NotificationService {
     private final UserRepository userRepository;
     private final PostRepository postRepository;

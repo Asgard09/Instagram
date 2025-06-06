@@ -8,6 +8,7 @@ import org.springframework.web.bind.annotation.*;
 
 @RestController
 @RequestMapping("/auth")
+@SuppressWarnings("unused")
 public class AuthenticationController {
 
     private final AuthenticationService authenticationService;
@@ -25,10 +26,5 @@ public class AuthenticationController {
     public ResponseEntity<AuthenticationResponse> login(@RequestBody AuthRequest request) {
         AuthenticationResponse response = authenticationService.authenticate(request);
         return ResponseEntity.ok(response);
-    }
-
-    @GetMapping("/demo")
-    public ResponseEntity<String> demo(){
-        return ResponseEntity.ok("Hello from Server");
     }
 }

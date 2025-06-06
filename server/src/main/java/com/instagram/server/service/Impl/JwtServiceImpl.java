@@ -15,10 +15,8 @@ import java.util.Date;
 import java.util.function.Function;
 
 @Service
+@SuppressWarnings("unused")
 public class JwtServiceImpl implements JwtService {
-    private String secretKey = "4bb6d1dfbafb64a681139d1586b6f1160d18159afd57c8c79136d7490630407c";
-
-    private long accessTokenExpire = 86400000;
 
     private final long refreshTokenExpire = 604800000;
 
@@ -65,6 +63,7 @@ public class JwtServiceImpl implements JwtService {
     }
 
     public String generateAccessToken(User user) {
+        long accessTokenExpire = 86400000;
         return generateToken(user, accessTokenExpire);
     }
 
@@ -80,6 +79,7 @@ public class JwtServiceImpl implements JwtService {
     }
 
     public SecretKey getSigningKey() {
+        String secretKey = "4bb6d1dfbafb64a681139d1586b6f1160d18159afd57c8c79136d7490630407c";
         byte[] keyBytes = Decoders.BASE64URL.decode(secretKey);
         return Keys.hmacShaKeyFor(keyBytes);
     }

@@ -26,7 +26,6 @@ public class Follow {
     @Column(name = "CreatedAt", nullable = false, updatable = false, columnDefinition = "TIMESTAMP DEFAULT CURRENT_TIMESTAMP")
     private LocalDateTime createdAt = LocalDateTime.now();
 
-    public Follow() {}
 
     public Follow(User follower, User followee) {
         this.follower = follower;
@@ -36,6 +35,7 @@ public class Follow {
     @Data
     @NoArgsConstructor
     @EqualsAndHashCode
+    /*Need to review*/
     public static class FollowId implements Serializable {
         private Long follower;
         private Long followee;

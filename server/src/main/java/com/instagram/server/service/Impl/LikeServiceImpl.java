@@ -20,6 +20,7 @@ import java.util.Optional;
 
 @Slf4j
 @Service
+@SuppressWarnings("unused")
 public class LikeServiceImpl implements LikeService {
     
     private final LikeRepository likeRepository;

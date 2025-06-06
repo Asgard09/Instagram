@@ -15,6 +15,7 @@ import java.util.stream.Collectors;
 @RestController
 @RequestMapping("/api/likes")
 @CrossOrigin(origins = "*", maxAge = 3600)
+@SuppressWarnings("unused")
 public class LikeController {
     
     private final LikeService likeService;
@@ -42,7 +43,7 @@ public class LikeController {
     }
     
     /**
-     * Check if current user has liked a post
+     * Check if the current user has liked a post
      */
     @GetMapping("/check/post/{postId}")
     public ResponseEntity<Map<String, Boolean>> checkLikeStatus(@PathVariable Long postId) {

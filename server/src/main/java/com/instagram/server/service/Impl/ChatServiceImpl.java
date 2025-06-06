@@ -19,6 +19,7 @@ import java.util.Optional;
 import java.util.stream.Collectors;
 
 @Service
+@SuppressWarnings("unused")
 public class ChatServiceImpl implements ChatService {
 
     private final ChatRepository chatRepository;
@@ -168,7 +169,7 @@ public class ChatServiceImpl implements ChatService {
         // Find unread messages for this user in this chat
         List<Message> unreadMessages = chat.getMessages().stream()
                 .filter(message -> message.getReceiver().getUserId().equals(userId) && !message.isRead())
-                .collect(Collectors.toList());
+                .toList();
         
         // Mark messages as read
         unreadMessages.forEach(message -> {

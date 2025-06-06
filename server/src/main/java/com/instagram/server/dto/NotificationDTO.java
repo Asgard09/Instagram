@@ -2,7 +2,6 @@ package com.instagram.server.dto;
 
 import lombok.*;
 
-import java.net.Proxy;
 import java.time.LocalDateTime;
 
 @Getter
