@@ -12,6 +12,7 @@ import java.time.LocalDateTime;
 @Data
 @Table(name = "follows")
 @IdClass(Follow.FollowId.class)
+@SuppressWarnings("unused")
 public class Follow {
     @Id
     @ManyToOne
@@ -26,6 +27,10 @@ public class Follow {
     @Column(name = "CreatedAt", nullable = false, updatable = false, columnDefinition = "TIMESTAMP DEFAULT CURRENT_TIMESTAMP")
     private LocalDateTime createdAt = LocalDateTime.now();
 
+    /*Need review
+    * if not have a default constructor make the mobile wrong
+    */
+    public Follow(){}
 
     public Follow(User follower, User followee) {
         this.follower = follower;
@@ -39,7 +44,7 @@ public class Follow {
     public static class FollowId implements Serializable {
         private Long follower;
         private Long followee;
-        
+
         public FollowId(Long follower, Long followee) {
             this.follower = follower;
             this.followee = followee;
