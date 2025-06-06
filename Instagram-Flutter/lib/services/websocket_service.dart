@@ -25,7 +25,7 @@ class WebSocketService {
   */
   final _messageController = StreamController<Message>.broadcast();
   final _readReceiptController = StreamController<int>.broadcast();
-  final _notificationController = StreamController<Notification>.broadcast();
+  final _notificationController = StreamController<NotificationModel>.broadcast();
   
   // Authentication info
   String? _token;
@@ -42,13 +42,13 @@ class WebSocketService {
   Stream<int> get readReceiptStream => _readReceiptController.stream;
 
   // Stream for notifications
-  Stream<Notification> get notificationStream => _notificationController.stream;
+  Stream<NotificationModel> get notificationStream => _notificationController.stream;
 
   // Connection status
   bool get isConnected => _connected;
 
   // Connect to WebSocket
-  void connect(String token, int userId) {
+  Future<void> connect(String token, int userId) async{
     // Store credentials for reconnection
     _token = token;
     _userId = userId;
@@ -128,7 +128,7 @@ class WebSocketService {
                 print('Received notification: ${frame.body}');
                 try {
                   final notificationJson = json.decode(frame.body!);
-                  final notification = Notification.fromJson(notificationJson);
+                  final notification = NotificationModel.fromJson(notificationJson);
                   _notificationController.add(notification);
                 } catch (e) {
                   print('Error processing notification: $e');
@@ -198,12 +198,14 @@ class WebSocketService {
     }
 
     final message = {
+      'senderId': _userId,
       'receiverId': receiverId,
       'content': content,
       'timestamp': DateTime.now().toUtc().toIso8601String(), // Include UTC timestamp
     };
 
     print('Sending message via WebSocket to user $receiverId: $content');
+    print('Sending message via WebSocket from user $_userId to user $receiverId: $content');
     print('WebSocket connection status: $_connected');
     print('Message JSON: ${json.encode(message)}');
     print('Destination: /app/chat.sendMessage');
