@@ -52,7 +52,7 @@ public class ChatDTO {
             // Include recent messages if requested
             if (includeMessages) {
                 dto.setRecentMessages(messages.stream()
-                        .limit(20) // Only get the 20 most recent messages
+                        .limit(100) // Only get the 100 most recent messages
                         .map(MessageDTO::fromEntity)
                         .collect(Collectors.toList()));
             }
