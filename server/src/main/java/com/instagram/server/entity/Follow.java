@@ -12,6 +12,13 @@ import java.time.LocalDateTime;
 @Data
 @Table(name = "follows")
 @IdClass(Follow.FollowId.class)
+/*Note
+* JPA (Jakarta Persistence API) requires entities to have a default (no-argument) constructor
+* First creates an instance of the entity class using the no-args constructor
+* Postman just receives the JSON response and displays it
+* Flutter app needs to deserialize the JSON into Dart objects
+*/
+@NoArgsConstructor
 @SuppressWarnings("unused")
 public class Follow {
     @Id
@@ -27,10 +34,6 @@ public class Follow {
     @Column(name = "CreatedAt", nullable = false, updatable = false, columnDefinition = "TIMESTAMP DEFAULT CURRENT_TIMESTAMP")
     private LocalDateTime createdAt = LocalDateTime.now();
 
-    /*Need review
-    * if not have a default constructor make the mobile wrong
-    */
-    public Follow(){}
 
     public Follow(User follower, User followee) {
         this.follower = follower;
