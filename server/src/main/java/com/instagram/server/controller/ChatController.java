@@ -147,7 +147,10 @@ public class ChatController {
     @MessageMapping("/chat.markRead")
     public void markMessagesAsReadWs(@Payload Map<String, Object> payload, Principal principal) {
         Long chatId = Long.valueOf(payload.get("chatId").toString());
-        Long userId = getUserIdFromUsername(principal.getName());
+        /*Need review
+        * to want to principal != null*/
+        Long userId = payload.get("userId") != null ? Long.parseLong(payload.get("userId").toString()) : 1L;
+        System.out.println("Using userId from payload : " + userId);
         
         chatService.markMessagesAsRead(chatId, userId);
     }

@@ -11,9 +11,9 @@ class WebSocketService {
   // Server base URL
   String get _baseUrl {
     if (kIsWeb) {
-      return 'ws://192.168.100.23:8080';
+      return 'ws://192.168.1.23:8080';
     } else {
-      return 'ws://192.168.100.23:8080';
+      return 'ws://192.168.1.23:8080';
     }
   }
 
@@ -231,6 +231,7 @@ class WebSocketService {
 
     final data = {
       'chatId': chatId,
+      'userId': _userId,
     };
 
     try {
