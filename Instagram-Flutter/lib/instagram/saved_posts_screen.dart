@@ -25,10 +25,10 @@ class _SavedPostsScreenState extends State<SavedPostsScreen> {
   String get serverBaseUrl {
     if (kIsWeb) {
       // Use the specific IP for web
-      return 'http://192.168.100.23:8080';
+      return 'http://192.168.1.9:8080';
     } else {
       // For mobile platforms
-      return 'http://192.168.100.23:8080';
+      return 'http://192.168.1.9:8080';
     }
   }
   
@@ -82,17 +82,17 @@ class _SavedPostsScreenState extends State<SavedPostsScreen> {
       
       if (response.statusCode == 200) {
         final List<dynamic> postsJson = json.decode(response.body);
+        print('Received ${postsJson.length} saved posts');
         
-        // Extract posts from the saved posts response
+        // Parse posts directly from PostResponse objects
         List<Post> posts = [];
-        for (var item in postsJson) {
-          if (item.containsKey('post')) {
-            // If the response contains a nested post object
-            final postData = item['post'];
-            posts.add(Post.fromJson(postData));
-          } else {
-            // If the response is already the post data
-            posts.add(Post.fromJson(item));
+        for (var postItem in postsJson) {
+          try {
+            posts.add(Post.fromJson(postItem));
+            print('Successfully parsed saved post');
+          } catch (e) {
+            print('Error parsing saved post: $e');
+            print('Post data: $postItem');
           }
         }
         
@@ -100,6 +100,8 @@ class _SavedPostsScreenState extends State<SavedPostsScreen> {
           _savedPosts = posts;
           _isLoading = false;
         });
+        
+        print('Successfully loaded ${posts.length} saved posts');
       } else {
         setState(() {
           _error = 'Failed to load saved posts: ${response.statusCode}';
@@ -107,6 +109,7 @@ class _SavedPostsScreenState extends State<SavedPostsScreen> {
         });
       }
     } catch (e) {
+      print('Error loading saved posts: $e');
       setState(() {
         _error = 'Error loading saved posts: $e';
         _isLoading = false;
