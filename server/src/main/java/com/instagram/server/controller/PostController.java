@@ -171,15 +171,22 @@ public class PostController {
     }
 
     @GetMapping("/getAll/{userId}")
-    public ResponseEntity<?> getAllPostSaved(@PathVariable Long userId){
+    public ResponseEntity<List<PostResponse>> getAllPostSaved(@PathVariable Long userId){
         try {
             List<PostSave> postSaves = postService.getAllPostSavedByUser(userId);
-            if (postSaves == null) {
-                return ResponseEntity.notFound().build();
+            if (postSaves == null || postSaves.isEmpty()) {
+                return ResponseEntity.ok(new ArrayList<>());
             }
-            return ResponseEntity.ok(postSaves);
+            
+            // Convert PostSave objects to PostResponse objects
+            List<PostResponse> postResponses = postSaves.stream()
+                    .map(postSave -> convertToPostResponse(postSave.getPost()))
+                    .collect(Collectors.toList());
+            
+            return ResponseEntity.ok(postResponses);
         } catch (Exception e) {
-            return ResponseEntity.status(500).body(Map.of("error", e.getMessage()));
+            log.error("Error getting saved posts for user {}: {}", userId, e.getMessage());
+            return ResponseEntity.status(500).body(new ArrayList<>());
         }
     }
     
