@@ -13,6 +13,7 @@ import org.springframework.messaging.simp.SimpMessagingTemplate;
 import org.springframework.stereotype.Service;
 
 import java.time.LocalDateTime;
+import java.util.List;
 
 @Service
 @Slf4j
@@ -50,27 +51,70 @@ public class NotificationServiceImpl implements NotificationService {
     }
 
     @Override
-    public void deleteNotification(Long notificationId) {
+    public List<Notification> getNotificationsForUser(String username) {
+        User user = userService.getUserByUsername(username);
+        return notificationRepository.findByToUserOrderByCreatedAtDesc(user);
+    }
 
+    @Override
+    public List<Notification> getUnreadNotificationForUser(String username) {
+        User user = userService.getUserByUsername(username);
+        return notificationRepository.findByToUserAndIsReadFalseOrderByCreatedAtDesc(user);
+    }
+
+    @Override
+    public long getUnreadNotificationCount(String username) {
+        User user = userService.getUserByUsername(username);
+        return notificationRepository.countUnreadNotifications(user);
+    }
+
+    @Override
+    public void deleteNotification(Long notificationId) {
+        Notification notification = notificationRepository.findById(notificationId)
+                .orElseThrow(() -> new RuntimeException("Notification not found"));
+        notificationRepository.delete(notification);
+
+        long unreadCount = getUnreadNotificationCount(notification.getToUser().getUsername());
+        messagingTemplate.convertAndSendToUser(
+                notification.getToUser().getUsername(),
+                "/notifications/count",
+                unreadCount
+        );
     }
 
     @Override
     public void sendNotificationToUser(String username, Notification notification) {
+        try {
+            // Send the notification to the user's notification channel
+            messagingTemplate.convertAndSendToUser(username, "/notifications", notification);
 
+            // Send updated unread count
+            long unreadCount = getUnreadNotificationCount(username);
+            messagingTemplate.convertAndSendToUser(username, "/notifications/count", unreadCount);
+
+            log.debug("Sent WebSocket notification to user: {}", username);
+        } catch (Exception e) {
+            log.error("Failed to send WebSocket notification to user: {}", username, e);
+        }
     }
 
     @Override
     public void createLikeNotification(User fromUser, User toUser, Post post) {
-
+        String message = String.format("%s liked your post", fromUser.getUsername());
+        createNotification(TypeOfNotification.LIKE, message, fromUser, toUser, post);
     }
 
     @Override
     public void createCommentNotification(User fromUser, User toUser, Post post, String commentText) {
-
+        String message = String.format("%s commented on your post: \"%s\"",
+                fromUser.getUsername(),
+                commentText.length() > 50 ? commentText.substring(0, 50) + "..." : commentText);
+        createNotification(TypeOfNotification.COMMENT, message, fromUser, toUser, post);
     }
 
     @Override
     public void createFollowNotification(User fromUser, User toUser) {
-
+        String message = String.format("%s started following you", fromUser.getUsername());
+        createNotification(TypeOfNotification.FOLLOW, message, fromUser, toUser, null);
     }
 }
