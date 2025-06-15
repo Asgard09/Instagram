@@ -3,6 +3,7 @@ package com.instagram.server.entity;
 import com.instagram.server.base.TypeOfNotification;
 import jakarta.persistence.*;
 import lombok.AllArgsConstructor;
+import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
@@ -12,6 +13,7 @@ import java.time.LocalDateTime;
 @NoArgsConstructor
 @AllArgsConstructor
 @Data
+@Builder
 @Table(name = "notification")
 public class Notification {
     @Id
@@ -23,7 +25,6 @@ public class Notification {
 
     @Column(nullable = false, length = 500)
     private String message;
-
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "from_user_id", nullable = false)
@@ -43,10 +44,6 @@ public class Notification {
 
     @Column(nullable = false)
     private boolean isRead = false;
-
-    /*Keep track when a notification was successfully delivered to the recipient*/
-    @Column(nullable = false)
-    private boolean isDelivered = false;
 
     @Column
     private LocalDateTime readAt;
