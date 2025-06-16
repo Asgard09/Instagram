@@ -5,13 +5,20 @@ import com.fasterxml.jackson.annotation.JsonIdentityReference;
 import com.fasterxml.jackson.annotation.ObjectIdGenerators;
 import jakarta.persistence.*;
 import lombok.Data;
+import lombok.Getter;
+import lombok.Setter;
 
 import java.util.ArrayList;
 import java.util.Date;
 import java.util.List;
 
+/*Note
+* Doesn't use @Data of lombok if you have circle relationships
+* Because it will auto generate toString() when log or debug
+* If posts stores likes and likes stores posts it will create recursive of toString()*/
 @Entity
-@Data
+@Getter
+@Setter
 @Table(name = "posts")
 @JsonIdentityInfo(
         generator = ObjectIdGenerators.PropertyGenerator.class,
