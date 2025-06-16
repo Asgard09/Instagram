@@ -1,5 +1,6 @@
 package com.instagram.server.service.Impl;
 
+import com.instagram.server.base.TypeOfNotification;
 import com.instagram.server.entity.Comment;
 import com.instagram.server.entity.Post;
 import com.instagram.server.entity.User;
@@ -7,6 +8,7 @@ import com.instagram.server.repository.CommentRepository;
 import com.instagram.server.repository.PostRepository;
 import com.instagram.server.repository.UserRepository;
 import com.instagram.server.service.CommentService;
+import com.instagram.server.service.NotificationService;
 import jakarta.transaction.Transactional;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.core.userdetails.UserDetails;
@@ -22,13 +24,16 @@ public class CommentServiceImpl implements CommentService {
     private final CommentRepository commentRepository;
     private final PostRepository postRepository;
     private final UserRepository userRepository;
+    private final NotificationService notificationService;
     
     public CommentServiceImpl(CommentRepository commentRepository,
                               PostRepository postRepository,
-                              UserRepository userRepository) {
+                              UserRepository userRepository,
+                              NotificationService notificationService) {
         this.commentRepository = commentRepository;
         this.postRepository = postRepository;
         this.userRepository = userRepository;
+        this.notificationService = notificationService;
     }
     
     /**
@@ -52,7 +57,14 @@ public class CommentServiceImpl implements CommentService {
         comment.setPost(post);
         comment.setUser(user);
         
-        return commentRepository.save(comment);
+        Comment savedComment = commentRepository.save(comment);
+        
+        // Create notification for a post-owner (if not commenting on own post)
+        if (!user.getUserId().equals(post.getUser().getUserId())) {
+            notificationService.createCommentNotification(user, post.getUser(), post, commentText);
+        }
+        
+        return savedComment;
     }
     
     /**

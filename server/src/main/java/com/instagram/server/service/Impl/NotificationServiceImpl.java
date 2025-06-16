@@ -90,20 +90,6 @@ public class NotificationServiceImpl implements NotificationService {
     }
 
     @Override
-    public void deleteNotification(Long notificationId) {
-        Notification notification = notificationRepository.findById(notificationId)
-                .orElseThrow(() -> new RuntimeException("Notification not found"));
-        notificationRepository.delete(notification);
-
-        long unreadCount = getUnreadNotificationCount(notification.getToUser().getUsername());
-        messagingTemplate.convertAndSendToUser(
-                notification.getToUser().getUsername(),
-                "/notifications/count",
-                unreadCount
-        );
-    }
-
-    @Override
     public void sendNotificationToUser(String username, Notification notification) {
         try {
             // Send the notification to the user's notification channel

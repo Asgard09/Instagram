@@ -61,6 +61,8 @@ public class LikeServiceImpl implements LikeService {
         like.setUser(user);
         like.setPost(post);
         like.setCreatedAt(new Date());
+
+        notificationService.createLikeNotification(user, post.getUser(), post);
         return likeRepository.save(like);
     }
     

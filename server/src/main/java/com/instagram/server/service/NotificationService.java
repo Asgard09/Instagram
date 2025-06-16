@@ -6,10 +6,7 @@ import com.instagram.server.entity.Post;
 import com.instagram.server.entity.User;
 
 import java.util.List;
-/*Note
-* Single Responsibility: NotificationService only handles notifications
-* Loose Coupling: Business services control their own notification messages
-*/
+
 public interface NotificationService {
     void createNotification(TypeOfNotification type, String message, User fromUser, User toUser, Post post);
     List<Notification> getUnreadNotificationForUser(String username);
@@ -17,4 +14,7 @@ public interface NotificationService {
     long getUnreadNotificationCount(String username);
     Notification markAsRead(Long notificationId);
     void sendNotificationToUser(String username, Notification notification);
+    void createLikeNotification(User fromUser, User toUser, Post post);
+    void createCommentNotification(User fromUser, User toUser, Post post, String commentText);
+    void createFollowNotification(User fromUser, User toUser);
 }

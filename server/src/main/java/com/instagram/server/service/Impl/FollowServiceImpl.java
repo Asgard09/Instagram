@@ -6,7 +6,9 @@ import com.instagram.server.repository.FollowRepository;
 import com.instagram.server.repository.PostRepository;
 import com.instagram.server.repository.UserRepository;
 import com.instagram.server.service.FollowService;
+import com.instagram.server.service.NotificationService;
 import jakarta.transaction.Transactional;
+import lombok.RequiredArgsConstructor;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.stereotype.Service;
@@ -15,18 +17,13 @@ import java.util.List;
 import java.util.Optional;
 
 @Service
-@SuppressWarnings("unused")
-public class FollowServiceImpl implements FollowService {
+@RequiredArgsConstructor
 
+public class FollowServiceImpl implements FollowService {
     private final FollowRepository followRepository;
     private final UserRepository userRepository;
     private final PostRepository postRepository;
-
-    public FollowServiceImpl(FollowRepository followRepository, UserRepository userRepository, PostRepository postRepository) {
-        this.followRepository = followRepository;
-        this.userRepository = userRepository;
-        this.postRepository = postRepository;
-    }
+    private final NotificationService notificationService;
 
     /**
      * Follow a user
@@ -46,6 +43,8 @@ public class FollowServiceImpl implements FollowService {
         if (follower.getUserId().equals(followee.getUserId())) {
             throw new RuntimeException("Cannot follow yourself");
         }
+
+        notificationService.createFollowNotification(follower, followee);
         
         Optional<Follow> existingFollow = followRepository.findByFollowerAndFollowee(follower, followee);
         if (existingFollow.isPresent()) {
