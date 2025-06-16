@@ -30,8 +30,8 @@ public class NotificationServiceImpl implements NotificationService {
     }
 
     @Override
-    public Notification createNotification(TypeOfNotification type, String message, User fromUser, User toUser, Post post) {
-        if (toUser.getUserId().equals(fromUser.getUserId())) return null;
+    public void createNotification(TypeOfNotification type, String message, User fromUser, User toUser, Post post) {
+        if (toUser.getUserId().equals(fromUser.getUserId())) return;
         Notification notification = Notification.builder()
                 .type(type)
                 .message(message)
@@ -47,7 +47,6 @@ public class NotificationServiceImpl implements NotificationService {
 
         log.info("Created notification: {} from {} to {}", type, fromUser.getUsername(), toUser.getUsername());
 
-        return savedNotification;
     }
 
     @Override
@@ -66,6 +65,28 @@ public class NotificationServiceImpl implements NotificationService {
     public long getUnreadNotificationCount(String username) {
         User user = userService.getUserByUsername(username);
         return notificationRepository.countUnreadNotifications(user);
+    }
+
+    @Override
+    public Notification markAsRead(Long notificationId) {
+        Notification notification = notificationRepository.findById(notificationId)
+                .orElseThrow(() -> new RuntimeException("Notification not found"));
+
+        if (!notification.isRead()) {
+            notification.setRead(true);
+            notification.setReadAt(LocalDateTime.now());
+            notification = notificationRepository.save(notification);
+
+            // Send updated notification count via WebSocket
+            long unreadCount = getUnreadNotificationCount(notification.getToUser().getUsername());
+            messagingTemplate.convertAndSendToUser(
+                    notification.getToUser().getUsername(),
+                    "/notifications/count",
+                    unreadCount
+            );
+        }
+
+        return notification;
     }
 
     @Override
