@@ -30,8 +30,8 @@ public class NotificationServiceImpl implements NotificationService {
     }
 
     @Override
-    public void createNotification(TypeOfNotification type, String message, User fromUser, User toUser, Post post) {
-        if (toUser.getUserId().equals(fromUser.getUserId())) return;
+    public Notification createNotification(TypeOfNotification type, String message, User fromUser, User toUser, Post post) {
+        if (toUser.getUserId().equals(fromUser.getUserId())) return null;
         Notification notification = Notification.builder()
                 .type(type)
                 .message(message)
@@ -47,6 +47,7 @@ public class NotificationServiceImpl implements NotificationService {
 
         log.info("Created notification: {} from {} to {}", type, fromUser.getUsername(), toUser.getUsername());
 
+        return savedNotification;
     }
 
     @Override
@@ -108,7 +109,7 @@ public class NotificationServiceImpl implements NotificationService {
     @Override
     public void createLikeNotification(User fromUser, User toUser, Post post) {
         String message = String.format("%s liked your post", fromUser.getUsername());
-        createNotification(TypeOfNotification.LIKE, message, fromUser, toUser, post);
+        notificationRepository.save(createNotification(TypeOfNotification.LIKE, message, fromUser, toUser, post));
     }
 
     @Override
@@ -116,12 +117,12 @@ public class NotificationServiceImpl implements NotificationService {
         String message = String.format("%s commented on your post: \"%s\"",
                 fromUser.getUsername(),
                 commentText.length() > 50 ? commentText.substring(0, 50) + "..." : commentText);
-        createNotification(TypeOfNotification.COMMENT, message, fromUser, toUser, post);
+        notificationRepository.save(createNotification(TypeOfNotification.COMMENT, message, fromUser, toUser, post));
     }
 
     @Override
     public void createFollowNotification(User fromUser, User toUser) {
         String message = String.format("%s started following you", fromUser.getUsername());
-        createNotification(TypeOfNotification.FOLLOW, message, fromUser, toUser, null);
+        notificationRepository.save(createNotification(TypeOfNotification.FOLLOW, message, fromUser, toUser, null));
     }
 }

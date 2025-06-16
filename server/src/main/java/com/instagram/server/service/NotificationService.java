@@ -8,7 +8,7 @@ import com.instagram.server.entity.User;
 import java.util.List;
 
 public interface NotificationService {
-    void createNotification(TypeOfNotification type, String message, User fromUser, User toUser, Post post);
+    Notification createNotification(TypeOfNotification type, String message, User fromUser, User toUser, Post post);
     List<Notification> getUnreadNotificationForUser(String username);
     List<Notification> getNotificationsForUser(String username);
     long getUnreadNotificationCount(String username);
