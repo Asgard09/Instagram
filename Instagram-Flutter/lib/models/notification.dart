@@ -29,26 +29,57 @@ class NotificationModel{
   * Create object from JSON
   */
   factory NotificationModel.fromJson(Map<String, dynamic> json) {
-    // Handle fromUser object
-    final fromUser = json['fromUser'] as Map<String, dynamic>?;
-    final fromUserId = fromUser?['userId'] ?? json['fromUserId'] ?? 0;
-    final fromUsername = fromUser?['username'] ?? json['fromUsername'] ?? '';
-    final fromUserProfilePicture = fromUser?['profilePicture'] ?? json['fromUserProfilePicture'];
+    // Handle fromUser object - it could be a Map or just an int (userId)
+    dynamic fromUserData = json['fromUser'];
+    int fromUserId;
+    String fromUsername;
+    String? fromUserProfilePicture;
     
-    // Handle post object
-    final post = json['post'] as Map<String, dynamic>?;
-    final postId = post?['postId'] ?? json['postId'];
-    final postImageUrl = post?['imageUrl'] ?? json['postImageUrl'];
+    if (fromUserData is Map<String, dynamic>) {
+      // fromUser is an object
+      fromUserId = fromUserData['userId'] ?? 0;
+      fromUsername = fromUserData['username'] ?? '';
+      fromUserProfilePicture = fromUserData['profilePicture'];
+    } else if (fromUserData is int) {
+      // fromUser is just the userId
+      fromUserId = fromUserData;
+      fromUsername = json['fromUsername'] ?? '';
+      fromUserProfilePicture = json['fromUserProfilePicture'];
+    } else {
+      // Fallback to direct fields
+      fromUserId = json['fromUserId'] ?? 0;
+      fromUsername = json['fromUsername'] ?? '';
+      fromUserProfilePicture = json['fromUserProfilePicture'];
+    }
+    
+    // Handle post object - it could be a Map or just an int (postId)
+    dynamic postData = json['post'];
+    int? postId;
+    String? postImageUrl;
+    
+    if (postData is Map<String, dynamic>) {
+      // post is an object
+      postId = postData['postId'];
+      postImageUrl = postData['imageUrl'];
+    } else if (postData is int) {
+      // post is just the postId
+      postId = postData;
+      postImageUrl = json['postImageUrl'];
+    } else {
+      // Fallback to direct fields
+      postId = json['postId'];
+      postImageUrl = json['postImageUrl'];
+    }
     
     return NotificationModel(
       id: json['id'] ?? 0,
       type: json['type']?.toString() ?? '',
       message: json['message'] ?? '',
-      fromUserId: fromUserId is int ? fromUserId : int.tryParse(fromUserId.toString()) ?? 0,
-      fromUsername: fromUsername.toString(),
-      fromUserProfilePicture: fromUserProfilePicture?.toString(),
-      postId: postId is int ? postId : (postId != null ? int.tryParse(postId.toString()) : null),
-      postImageUrl: postImageUrl?.toString(),
+      fromUserId: fromUserId,
+      fromUsername: fromUsername,
+      fromUserProfilePicture: fromUserProfilePicture,
+      postId: postId,
+      postImageUrl: postImageUrl,
       createdAt: json['createdAt'] != null
           ? DateTime.parse(json['createdAt'])
           : DateTime.now(),

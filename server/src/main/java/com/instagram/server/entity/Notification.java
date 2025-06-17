@@ -24,16 +24,16 @@ public class Notification {
     @Column(nullable = false, length = 500)
     private String message;
 
-    @ManyToOne(fetch = FetchType.LAZY)
+    @ManyToOne(fetch = FetchType.EAGER)
     @JoinColumn(name = "from_user_id", nullable = false)
     private User fromUser;
 
-    @ManyToOne(fetch = FetchType.LAZY)
+    @ManyToOne(fetch = FetchType.EAGER)
     /*Note: to_user_id --> name of a foreign key*/
     @JoinColumn(name = "to_user_id", nullable = false)
     private User toUser;
 
-    @ManyToOne(fetch = FetchType.LAZY)
+    @ManyToOne(fetch = FetchType.EAGER)
     @JoinColumn(name = "post_id")
     private Post post;
 

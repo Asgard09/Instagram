@@ -36,6 +36,10 @@ class NotificationService{
         final List<dynamic> data = json.decode(response.body);
         if (kDebugMode) {
           print('NotificationService: Successfully fetched ${data.length} notifications');
+          // Log first notification structure for debugging
+          if (data.isNotEmpty) {
+            print('NotificationService: First notification structure: ${data[0]}');
+          }
         }
         return data.map((json) => NotificationModel.fromJson(json)).toList();
       } else {
