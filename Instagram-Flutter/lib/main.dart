@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:flutter/foundation.dart' show kIsWeb;
+import 'package:flutter/foundation.dart' show kDebugMode, kIsWeb;
 import 'package:practice_widgets/instagram/home_screen.dart';
 import 'package:practice_widgets/instagram/login_screen.dart';
 import 'package:provider/provider.dart';
@@ -10,6 +10,7 @@ import 'data/providers/user_provider.dart';
 import 'data/providers/likes_provider.dart';
 import 'data/providers/chat_provider.dart';
 import 'data/providers/comments_provider.dart';
+import 'data/providers/notification_provider.dart';
 import 'instagram/main_screen.dart';
 
 // Import mobile implementation only on non-web platforms
@@ -26,8 +27,9 @@ void main() {
         ChangeNotifierProvider(create: (context) => LikesProvider()),
         ChangeNotifierProvider(create: (context) => ChatProvider()),
         ChangeNotifierProvider(create: (context) => CommentsProvider()),
+        ChangeNotifierProvider(create: (context) => NotificationProvider()),
       ],
-      child: MyApp(),
+      child: const MyApp(),
     ),
   );
 }
@@ -39,7 +41,9 @@ class MyApp extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     // Print platform info for debugging
-    print('Running on platform: ${kIsWeb ? 'Web' : 'Native'}');
+    if (kDebugMode) {
+      print('Running on platform: ${kIsWeb ? 'Web' : 'Native'}');
+    }
     
     return MaterialApp(
         debugShowCheckedModeBanner: false,
@@ -100,7 +104,7 @@ class _AppInitializerState extends State<AppInitializer>{
   @override
   Widget build(BuildContext context) {
     if (_isInitializing) {
-      return Scaffold(
+      return const Scaffold(
         backgroundColor: Colors.black,
         body: Center(
           child: Column(

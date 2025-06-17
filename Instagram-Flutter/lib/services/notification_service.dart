@@ -1,5 +1,6 @@
 import 'dart:convert';
 
+import 'package:flutter/foundation.dart';
 import 'package:practice_widgets/models/notification.dart';
 import 'package:http/http.dart' as http;
 import 'package:shared_preferences/shared_preferences.dart';
@@ -10,22 +11,50 @@ class NotificationService{
 
   Future<List<NotificationModel>> getNotifications(String token) async{
     try{
+      if (kDebugMode) {
+        print('NotificationService: Attempting to fetch notifications from: $baseUrl/notifications');
+        print('NotificationService: Using token: ${token.substring(0, 20)}...');
+      }
+      
       final response = await http.get(
         Uri.parse('$baseUrl/notifications'),
         headers: {
           'Authorization': 'Bearer $token',
           'Content-Type': 'application/json',
         },
-      );
+      ).timeout(const Duration(seconds: 10)); // Add timeout
+
+      if (kDebugMode) {
+        print('NotificationService: Response status code: ${response.statusCode}');
+        print('NotificationService: Response headers: ${response.headers}');
+        if (response.statusCode != 200) {
+          print('NotificationService: Response body: ${response.body}');
+        }
+      }
 
       if (response.statusCode == 200) {
         final List<dynamic> data = json.decode(response.body);
+        if (kDebugMode) {
+          print('NotificationService: Successfully fetched ${data.length} notifications');
+        }
         return data.map((json) => NotificationModel.fromJson(json)).toList();
       } else {
-        throw Exception('Failed to fetch notifications: ${response.statusCode}');
+        if (kDebugMode) {
+          print('NotificationService: Failed to fetch notifications. Status: ${response.statusCode}, Body: ${response.body}');
+        }
+        throw Exception('Failed to fetch notifications: ${response.statusCode} - ${response.body}');
       }
     } catch (e) {
-      print('Error fetching notifications: $e');
+      if (kDebugMode) {
+        print('NotificationService: Error fetching notifications: $e');
+        print('NotificationService: Error type: ${e.runtimeType}');
+      }
+      
+      // Check if it's a network connectivity issue
+      if (e.toString().contains('ClientException') || e.toString().contains('network error')) {
+        throw Exception('Network error: Unable to connect to server at $baseUrl. Please check your internet connection and server status.');
+      }
+      
       throw Exception('Failed to fetch notifications: $e');
     }
   }
@@ -33,7 +62,7 @@ class NotificationService{
   Future<List<NotificationModel>> getUnreadNotifications(String token) async {
     try {
       final response = await http.get(
-        Uri.parse('$baseUrl/api/notifications/unread'),
+        Uri.parse('$baseUrl/notifications/unread'),
         headers: {
           'Authorization': 'Bearer $token',
           'Content-Type': 'application/json',
@@ -55,7 +84,7 @@ class NotificationService{
   Future<int> getUnreadNotificationCount(String token) async {
     try {
       final response = await http.get(
-        Uri.parse('$baseUrl/api/notifications/count'),
+        Uri.parse('$baseUrl/notifications/count'),
         headers: {
           'Authorization': 'Bearer $token',
           'Content-Type': 'application/json',

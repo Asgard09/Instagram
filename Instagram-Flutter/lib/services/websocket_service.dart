@@ -11,9 +11,9 @@ class WebSocketService {
   // Server base URL
   String get _baseUrl {
     if (kIsWeb) {
-      return 'ws://192.168.1.23:8080';
+      return 'ws://192.168.100.23:8080';
     } else {
-      return 'ws://192.168.1.23:8080';
+      return 'ws://192.168.100.23:8080';
     }
   }
 
@@ -122,7 +122,7 @@ class WebSocketService {
 
           // Subscribe to notifications
           _stompClient!.subscribe(
-            destination: '/user/$userId/queue/notifications',
+            destination: '/user/$userId/notifications',
             callback: (frame) {
               if (frame.body != null) {
                 print('Received notification: ${frame.body}');
@@ -133,6 +133,17 @@ class WebSocketService {
                 } catch (e) {
                   print('Error processing notification: $e');
                 }
+              }
+            },
+          );
+
+          // Subscribe to notification count updates
+          _stompClient!.subscribe(
+            destination: '/user/$userId/notifications/count',
+            callback: (frame) {
+              if (frame.body != null) {
+                print('Received notification count update: ${frame.body}');
+                // You can handle count updates here if needed
               }
             },
           );
@@ -204,11 +215,13 @@ class WebSocketService {
       'timestamp': DateTime.now().toUtc().toIso8601String(), // Include UTC timestamp
     };
 
-    print('Sending message via WebSocket to user $receiverId: $content');
-    print('Sending message via WebSocket from user $_userId to user $receiverId: $content');
-    print('WebSocket connection status: $_connected');
-    print('Message JSON: ${json.encode(message)}');
-    print('Destination: /app/chat.sendMessage');
+    if (kDebugMode) {
+      print('Sending message via WebSocket to user $receiverId: $content');
+      print('Sending message via WebSocket from user $_userId to user $receiverId: $content');
+      print('WebSocket connection status: $_connected');
+      print('Message JSON: ${json.encode(message)}');
+      print('Destination: /app/chat.sendMessage');
+    }
     
     try {
       _stompClient!.send(

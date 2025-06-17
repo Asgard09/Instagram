@@ -1,0 +1,9 @@
+1. Widgets
+Everything in Flutter is a widget
+Two types:
+    StatelessWidget: UI that doesn't change(Text, icon,...)
+    StatefulWidget: UI that can change over time (forms, toggle buttons,...)
+Widgets describe what their view should look like
+
+2. State Management
+Controls how the UI updates when data changes
