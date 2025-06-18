@@ -8,6 +8,7 @@ import com.instagram.server.repository.TokenRepository;
 import com.instagram.server.repository.UserRepository;
 import com.instagram.server.service.AuthenticationService;
 import com.instagram.server.service.JwtService;
+import lombok.RequiredArgsConstructor;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.crypto.password.PasswordEncoder;
@@ -18,21 +19,13 @@ import java.util.List;
 
 @Service
 @SuppressWarnings("unused")
+@RequiredArgsConstructor
 public class AuthenticationServiceImpl implements AuthenticationService {
     private final UserRepository userRepository;
     private final TokenRepository tokenRepository;
     private final JwtService jwtService;
     private final PasswordEncoder passwordEncoder;
     private final AuthenticationManager authenticationManager;
-
-    public AuthenticationServiceImpl(UserRepository userRepository, TokenRepository tokenRepository,
-                                     JwtService jwtService, PasswordEncoder passwordEncoder, AuthenticationManager authenticationManager) {
-        this.userRepository = userRepository;
-        this.tokenRepository = tokenRepository;
-        this.jwtService = jwtService;
-        this.passwordEncoder = passwordEncoder;
-        this.authenticationManager = authenticationManager;
-    }
 
     public AuthenticationResponse register(AuthRequest request){
         User user = new User();

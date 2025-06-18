@@ -9,6 +9,7 @@ import com.instagram.server.repository.ChatRepository;
 import com.instagram.server.repository.MessageRepository;
 import com.instagram.server.repository.UserRepository;
 import com.instagram.server.service.ChatService;
+import lombok.RequiredArgsConstructor;
 import org.springframework.messaging.simp.SimpMessagingTemplate;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -20,23 +21,13 @@ import java.util.stream.Collectors;
 
 @Service
 @SuppressWarnings("unused")
+@RequiredArgsConstructor
 public class ChatServiceImpl implements ChatService {
 
     private final ChatRepository chatRepository;
     private final MessageRepository messageRepository;
     private final UserRepository userRepository;
     private final SimpMessagingTemplate messagingTemplate;
-
-    public ChatServiceImpl(
-            ChatRepository chatRepository,
-            MessageRepository messageRepository,
-            UserRepository userRepository,
-            SimpMessagingTemplate messagingTemplate) {
-        this.chatRepository = chatRepository;
-        this.messageRepository = messageRepository;
-        this.userRepository = userRepository;
-        this.messagingTemplate = messagingTemplate;
-    }
 
     /**
      * Get all chats for a user

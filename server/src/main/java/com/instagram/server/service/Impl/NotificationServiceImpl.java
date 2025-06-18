@@ -8,6 +8,7 @@ import com.instagram.server.repository.NotificationRepository;
 import com.instagram.server.service.NotificationService;
 import com.instagram.server.service.UserService;
 import jakarta.transaction.Transactional;
+import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.messaging.simp.SimpMessagingTemplate;
 import org.springframework.stereotype.Service;
@@ -18,16 +19,11 @@ import java.util.List;
 @Service
 @Slf4j
 @Transactional
+@RequiredArgsConstructor
 public class NotificationServiceImpl implements NotificationService {
     private final NotificationRepository notificationRepository;
     private final UserService userService;
     private final SimpMessagingTemplate messagingTemplate;
-
-    public NotificationServiceImpl(NotificationRepository notificationRepository, UserService userService, SimpMessagingTemplate messagingTemplate) {
-        this.notificationRepository = notificationRepository;
-        this.userService = userService;
-        this.messagingTemplate = messagingTemplate;
-    }
 
     @Override
     public Notification createNotification(TypeOfNotification type, String message, User fromUser, User toUser, Post post) {

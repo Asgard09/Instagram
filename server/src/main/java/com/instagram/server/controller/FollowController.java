@@ -5,6 +5,7 @@ import com.instagram.server.entity.Follow;
 import com.instagram.server.entity.User;
 import com.instagram.server.service.FollowService;
 import com.instagram.server.service.UserService;
+import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
@@ -17,16 +18,11 @@ import java.util.stream.Collectors;
 @RequestMapping("/api/follows")
 @CrossOrigin(origins = "*", maxAge = 3600)
 @SuppressWarnings("unused")
+@RequiredArgsConstructor
 public class FollowController {
     
     private final FollowService followService;
     private final UserService userService;
-    
-    public FollowController(FollowService followService, UserService userService) {
-        this.followService = followService;
-        this.userService = userService;
-    }
-    
     /**
      * Follow or unfollow a user
      */

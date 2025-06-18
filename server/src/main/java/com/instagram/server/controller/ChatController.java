@@ -5,6 +5,7 @@ import com.instagram.server.dto.MessageDTO;
 import com.instagram.server.entity.User;
 import com.instagram.server.repository.UserRepository;
 import com.instagram.server.service.ChatService;
+import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.ResponseEntity;
 import org.springframework.messaging.handler.annotation.MessageMapping;
@@ -21,18 +22,11 @@ import java.util.Map;
 @RestController
 @RequestMapping("/api/chats")
 @SuppressWarnings("unused")
+@RequiredArgsConstructor
 public class ChatController {
 
     private final ChatService chatService;
     private final UserRepository userRepository;
-
-    public ChatController(
-            ChatService chatService,
-            UserRepository userRepository) {
-        this.chatService = chatService;
-        this.userRepository = userRepository;
-    }
-
     /**
      * REST endpoint to get all chats for the current user
      */

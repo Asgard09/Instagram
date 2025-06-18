@@ -10,6 +10,7 @@ import com.instagram.server.repository.UserRepository;
 import com.instagram.server.service.CommentService;
 import com.instagram.server.service.NotificationService;
 import jakarta.transaction.Transactional;
+import lombok.RequiredArgsConstructor;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.stereotype.Service;
@@ -19,22 +20,13 @@ import java.util.List;
 
 @Service
 @SuppressWarnings("unused")
+@RequiredArgsConstructor
 public class CommentServiceImpl implements CommentService {
     
     private final CommentRepository commentRepository;
     private final PostRepository postRepository;
     private final UserRepository userRepository;
     private final NotificationService notificationService;
-    
-    public CommentServiceImpl(CommentRepository commentRepository,
-                              PostRepository postRepository,
-                              UserRepository userRepository,
-                              NotificationService notificationService) {
-        this.commentRepository = commentRepository;
-        this.postRepository = postRepository;
-        this.userRepository = userRepository;
-        this.notificationService = notificationService;
-    }
     
     /**
      * Create a new comment on a post

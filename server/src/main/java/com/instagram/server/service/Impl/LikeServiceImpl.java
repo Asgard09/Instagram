@@ -9,6 +9,7 @@ import com.instagram.server.repository.UserRepository;
 import com.instagram.server.service.LikeService;
 import com.instagram.server.service.NotificationService;
 import jakarta.transaction.Transactional;
+import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.core.userdetails.UserDetails;
@@ -21,20 +22,13 @@ import java.util.Optional;
 @Slf4j
 @Service
 @SuppressWarnings("unused")
+@RequiredArgsConstructor
 public class LikeServiceImpl implements LikeService {
     
     private final LikeRepository likeRepository;
     private final PostRepository postRepository;
     private final UserRepository userRepository;
     private final NotificationService notificationService;
-
-    public LikeServiceImpl(LikeRepository likeRepository, PostRepository postRepository,
-                           UserRepository userRepository, NotificationService notificationService) {
-        this.likeRepository = likeRepository;
-        this.postRepository = postRepository;
-        this.userRepository = userRepository;
-        this.notificationService = notificationService;
-    }
     
     /**
      * Like a post

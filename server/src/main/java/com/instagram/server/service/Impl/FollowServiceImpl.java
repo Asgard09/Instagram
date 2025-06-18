@@ -18,7 +18,6 @@ import java.util.Optional;
 
 @Service
 @RequiredArgsConstructor
-
 public class FollowServiceImpl implements FollowService {
     private final FollowRepository followRepository;
     private final UserRepository userRepository;

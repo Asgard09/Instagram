@@ -10,6 +10,7 @@ import com.instagram.server.repository.UserRepository;
 import com.instagram.server.service.FileStorageService;
 import com.instagram.server.service.PostService;
 import jakarta.transaction.Transactional;
+import lombok.RequiredArgsConstructor;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.stereotype.Service;
@@ -22,20 +23,13 @@ import java.util.Optional;
 
 @Service
 @SuppressWarnings("unused")
+@RequiredArgsConstructor
 public class PostServiceImpl implements PostService {
 
     private final PostRepository postRepository;
     private final UserRepository userRepository;
     private final FileStorageService fileStorageService;
     private final PostSaveRepository postSaveRepository;
-
-    public PostServiceImpl(PostRepository postRepository, UserRepository userRepository,
-                           FileStorageService fileStorageService, PostSaveRepository postSaveRepository) {
-        this.postRepository = postRepository;
-        this.userRepository = userRepository;
-        this.fileStorageService = fileStorageService;
-        this.postSaveRepository = postSaveRepository;
-    }
 
     @Transactional
     public Post createPost(CreatePostRequest request) throws IOException {

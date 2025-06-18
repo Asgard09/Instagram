@@ -7,6 +7,7 @@ import com.instagram.server.entity.User;
 import com.instagram.server.repository.UserRepository;
 import com.instagram.server.service.FileStorageService;
 import com.instagram.server.service.UserService;
+import lombok.RequiredArgsConstructor;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.stereotype.Service;
@@ -18,14 +19,10 @@ import java.util.List;
 
 @Service
 @SuppressWarnings("unused")
+@RequiredArgsConstructor
 public class UserServiceImpl implements UserService {
     private final UserRepository userRepository;
     private final FileStorageService fileStorageService;
-
-    public UserServiceImpl(UserRepository userRepository, FileStorageService fileStorageService) {
-        this.userRepository = userRepository;
-        this.fileStorageService = fileStorageService;
-    }
 
     // Get followers for tagging
     public List<User> getFollowersForTagging(String username) {
