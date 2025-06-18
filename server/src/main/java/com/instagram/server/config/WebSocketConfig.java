@@ -8,6 +8,7 @@ import org.springframework.context.annotation.Configuration;
 import org.springframework.messaging.converter.DefaultContentTypeResolver;
 import org.springframework.messaging.converter.MappingJackson2MessageConverter;
 import org.springframework.messaging.converter.MessageConverter;
+import org.springframework.messaging.handler.annotation.MessageMapping;
 import org.springframework.messaging.simp.config.MessageBrokerRegistry;
 import org.springframework.util.MimeTypeUtils;
 import org.springframework.web.socket.config.annotation.EnableWebSocketMessageBroker;
@@ -20,13 +21,23 @@ import java.util.TimeZone;
 @Configuration
 @EnableWebSocketMessageBroker
 @SuppressWarnings("unused")
+
+/* WebSocketMessageBrokerConfigurer
+* Defines methods for configuring message handling with simple messaging protocols (for example, STOMP)
+* from WebSocket clients.*/
 public class WebSocketConfig implements WebSocketMessageBrokerConfigurer {
 
     @Override
+    /*
+    * Creates WebSocket URLs that clients can connect to
+    * Sets up the initial handshake between client and server
+    */
     public void registerStompEndpoints(StompEndpointRegistry registry) {
+        /*Creates a WebSocket endpoint at URL: ws://localhost:8080/ws*/
         registry.addEndpoint("/ws")
                 .setAllowedOriginPatterns("*")
                 .setAllowedOrigins("*")
+                /*Note: In the future can remove sockjs*/
                 .withSockJS()
                 .setClientLibraryUrl("https://cdn.jsdelivr.net/npm/sockjs-client@1/dist/sockjs.min.js");
         
@@ -36,12 +47,16 @@ public class WebSocketConfig implements WebSocketMessageBrokerConfigurer {
                 .setAllowedOrigins("*");
     }
 
+    /*like postal-system for a real-time message,
+    * configure how messages are routed and delivered in your WebSocket application*/
     @Override
     public void configureMessageBroker(MessageBrokerRegistry registry) {
-        // Set prefix for endpoints the client will send messages to
+        /*Client sends messages to destinations starting with /app
+        Server handles these messages with @MessageMapping annotations*/
         registry.setApplicationDestinationPrefixes("/app");
         
-        // Set prefix for endpoints the client will subscribe to receive messages from
+        // Defines where the server sends messages TO clients
+        //  subscribe to these destinations to receive messages
         registry.enableSimpleBroker("/user", "/topic", "/queue", "/notifications");
         
         // Enable user destination prefixes
