@@ -163,7 +163,6 @@ public class FileStorageServiceImpl implements FileStorageService {
         if (mimeInfo.contains("image/png")) return ".png";
         if (mimeInfo.contains("image/gif")) return ".gif";
         if (mimeInfo.contains("image/webp")) return ".webp";
-        if (mimeInfo.contains("image/jpg") || mimeInfo.contains("image/jpeg")) return ".jpg";
         return ".jpg";
     }
 
