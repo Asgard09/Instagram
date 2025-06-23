@@ -106,8 +106,8 @@ public class ChatController {
     @MessageMapping("/chat.sendMessage")
     public void sendMessageWs(@Payload Map<String, Object> payload, Principal principal) {
         try {
-            System.out.println("Received WebSocket message payload: " + payload);
-            System.out.println("Principal: " + (principal != null ? principal.getName() : "null"));
+            log.info("Received WebSocket message payload: {}", payload);
+            log.info("Principal: {} " ,(principal != null ? principal.getName() : "null"));
             
             // For testing purposes, if no principal, use senderId from payload
             Long senderId;

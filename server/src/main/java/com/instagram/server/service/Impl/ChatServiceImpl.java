@@ -27,6 +27,7 @@ public class ChatServiceImpl implements ChatService {
     private final ChatRepository chatRepository;
     private final MessageRepository messageRepository;
     private final UserRepository userRepository;
+    /*Is the implement of websocket config*/
     private final SimpMessagingTemplate messagingTemplate;
 
     /**
