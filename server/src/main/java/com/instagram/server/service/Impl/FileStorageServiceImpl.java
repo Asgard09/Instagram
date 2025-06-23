@@ -1,5 +1,6 @@
 package com.instagram.server.service.Impl;
 
+import com.instagram.server.base.ImageType;
 import com.instagram.server.service.FileStorageService;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
@@ -28,207 +29,150 @@ public class FileStorageServiceImpl implements FileStorageService {
      */
     public String storeImage(String imageData, String directory) throws IOException {
         // Check for empty or null data
-        if (imageData == null || imageData.isEmpty()) {
-            System.err.println("WARNING: Received empty image data!");
-            // Create a valid test image instead of failing
-            return createTestImage(directory, "empty-test-image.jpg");
-        }
-        
-        // Debug info to help diagnose encoding issues
-        logImageDataInfo(imageData);
+        if (isInvalidImageData(imageData)) return createTestImage(directory, "empty-test-image.jpg");
         
         // Create directory if it doesn't exist
+        createDirectoryIfNotExists(directory);
+        ImageType type = detectImageType(imageData);
+
+        return switch (type){
+            case DATA_URL -> handleDataUrl(imageData, directory);
+            case HTTP_URL -> handleHttpUrl(imageData, directory);
+            case BLOB_URL -> handleBlobUrl(imageData, directory);
+            case BASE64 -> handleBase64(imageData, directory);
+            case INVALID -> createTestImage(directory, "invalid_format-" + UUID.randomUUID() + ".jpg");
+        };
+    }
+
+    private boolean isInvalidImageData(String imageData){
+        return imageData == null || imageData.trim().isEmpty();
+    }
+
+    private void createDirectoryIfNotExists(String directory) throws IOException{
         Path dirPath = Paths.get(uploadDir, directory);
         Files.createDirectories(dirPath);
+    }
 
-        // Generate a unique filename with appropriate extension
-        String extension = ".jpg"; // Default extension
-        String filename;
-        Path filePath;
-        
-        // Try to detect an image format from data URL
-        if (imageData.startsWith("data:image/")) {
-            String mimeType = imageData.substring(5, imageData.indexOf(";"));
-            if (mimeType.equals("image/png")) {
-                extension = ".png";
-            } else if (mimeType.equals("image/gif")) {
-                extension = ".gif";
-            } else if (mimeType.equals("image/webp")) {
-                extension = ".webp";
-            } else if (mimeType.contains("jpg") || mimeType.contains("jpeg")) {
-                extension = ".jpg";
-            }
-        }
-        
-        // For HTTP URLs, we'll determine the extension later from content-type
-        if (imageData.startsWith("http")) {
-            // Use a temporary extension, will update after download
-            extension = ".tmp";
-        }
-        
-        filename = UUID.randomUUID() + extension;
-        filePath = Paths.get(dirPath.toString(), filename);
+    private ImageType detectImageType(String imageData) {
+        String trimmed = imageData.trim();
 
-        // Check if it's a base64 image or a URL/blob reference
-        if (imageData.startsWith("data:")) {
-            try {
-                // It's a data URL (e.g., data:image/jpeg;base64,/9j/4AAQ...)
-                // Extract the base64 part after the comma
-                int commaIndex = imageData.indexOf(",");
-                if (commaIndex != -1) {
-                    StringBuilder base64Data = new StringBuilder(imageData.substring(commaIndex + 1));
-                    
-                    // Remove potential line breaks that can cause decoding issues
-                    base64Data = new StringBuilder(base64Data.toString().replaceAll("\\s", ""));
-                    
-                    System.out.println("Attempting to decode base64 data of length: " + base64Data.length());
-                    
-                    try {
-                        byte[] imageBytes = Base64.getDecoder().decode(base64Data.toString());
-                        System.out.println("Successfully decoded " + imageBytes.length + " bytes");
-                        
-                        try (FileOutputStream fos = new FileOutputStream(filePath.toFile())) {
-                            fos.write(imageBytes);
-                            System.out.println("Successfully wrote image to: " + filePath);
-                        }
-                    } catch (IllegalArgumentException e) {
-                        System.err.println("Failed to decode base64 (inner): " + e.getMessage());
-                        
-                        // Try decoding with a more forgiving approach - padding the string
-                        try {
-                            // Add padding if needed
-                            while (base64Data.length() % 4 != 0) {
-                                base64Data.append("=");
-                            }
-                            
-                            byte[] imageBytes = Base64.getDecoder().decode(base64Data.toString());
-                            try (FileOutputStream fos = new FileOutputStream(filePath.toFile())) {
-                                fos.write(imageBytes);
-                                System.out.println("Successfully wrote image after padding fix to: " + filePath);
-                            }
-                        } catch (Exception ex) {
-                            System.err.println("Final base64 decoding attempt failed: " + ex.getMessage());
-                            // Create a valid test image instead of returning an error path
-                            return createTestImage(directory, "base64-error-" + UUID.randomUUID() + ".jpg");
-                        }
-                    }
-                } else {
-                    // Try to fix common data URL format issues
-                    if (imageData.contains("base64")) {
-                        // Has "base64" but missing comma - let's try to fix it
-                        int base64Index = imageData.indexOf("base64");
-                        if (base64Index != -1) {
-                            // Insert the missing comma
-                            String prefix = imageData.substring(0, base64Index + 6);
-                            String data = imageData.substring(base64Index + 6);
-                            
-                            System.out.println("Attempting to fix malformed data URL by adding comma");
-                            return storeImage(prefix + "," + data, directory);
-                        }
-                    }
-                    
-                    // No comma found and couldn't fix, create test image
-                    System.err.println("Invalid data URL format: " + imageData.substring(0, Math.min(50, imageData.length())) + "...");
-                    return createTestImage(directory, "invalid-format-" + UUID.randomUUID() + ".jpg");
-                }
-            } catch (IllegalArgumentException e) {
-                // Base64 decoding failed, create valid test image
-                System.err.println("Base64 decoding error: " + e.getMessage());
-                return createTestImage(directory, "decoding-error-" + UUID.randomUUID() + ".jpg");
-            }
-        } else if (imageData.startsWith("blob:")) {
-            // Check if it's a string parameter stripped of quotes by the controller
-            if (imageData.length() > 5 && imageData.charAt(5) == '"') {
-                // This might be a JSON string that wasn't properly processed
-                System.out.println("Found a JSON-formatted blob URL, attempting to clean");
-                String cleanedBlob = imageData.replaceAll("^\"|\"$", "");
-                return storeImage(cleanedBlob, directory);
-            }
-            
-            System.err.println("Received blob URL that can't be processed: " + imageData);
-            
-            // Create a valid test image for blob URLs
-            return createTestImage(directory, "blob-test-" + UUID.randomUUID() + ".jpg");
-        } else if (imageData.startsWith("http")) {
-            try {
-                // Try to download the image from the URL
-                URL url = new URL(imageData);
-                HttpURLConnection connection = (HttpURLConnection) url.openConnection();
-                connection.setRequestMethod("GET");
-                connection.setConnectTimeout(5000);
-                connection.setReadTimeout(5000);
-                
-                int responseCode = connection.getResponseCode();
-                if (responseCode == HttpURLConnection.HTTP_OK) {
-                    // Check content type to determine file extension
-                    String contentType = connection.getContentType();
-                    if (contentType != null) {
-                        String newExtension = getExtensionFromContentType(contentType);
-                        if (!newExtension.equals(extension)) {
-                            // Create a new file with the correct extension
-                            String newFilename = filename.substring(0, filename.lastIndexOf('.')) + newExtension;
-                            Path newFilePath = Paths.get(dirPath.toString(), newFilename);
-                            
-                            // Update our references
-                            filename = newFilename;
-                            filePath = newFilePath;
-                        }
-                    }
-                    
-                    try (InputStream in = connection.getInputStream();
-                         FileOutputStream out = new FileOutputStream(filePath.toFile())) {
-                        
-                        byte[] buffer = new byte[4096];
-                        int bytesRead;
-                        while ((bytesRead = in.read(buffer)) != -1) {
-                            out.write(buffer, 0, bytesRead);
-                        }
-                        
-                        System.out.println("Successfully downloaded image from URL: " + imageData);
-                    }
-                } else {
-                    System.err.println("Failed to download image from URL: " + imageData + " (Status code: " + responseCode + ")");
-                    return createTestImage(directory, "http-error-" + UUID.randomUUID() + ".jpg");
-                }
-            } catch (Exception e) {
-                System.err.println("Failed to download from URL: " + imageData + ", Error: " + e.getMessage());
+        if (trimmed.startsWith("data:image/")) return ImageType.DATA_URL;
+        if (trimmed.startsWith("http")) return ImageType.HTTP_URL;
+        if (trimmed.startsWith("blob:")) return ImageType.BLOB_URL;
+        if (isValidBase64(trimmed)) return ImageType.BASE64;
+
+        return ImageType.INVALID;
+    }
+
+    private boolean isValidBase64(String data) {
+        try {
+            // Remove whitespace and check if it's valid base64
+            String cleaned = data.replaceAll("\\s", "");
+            Base64.getDecoder().decode(cleaned);
+            return true;
+        } catch (IllegalArgumentException e) {
+            return false;
+        }
+    }
+
+    private String handleDataUrl(String imageData, String directory) throws IOException {
+        int commaIndex = imageData.indexOf(",");
+        if (commaIndex == -1) {
+            return createTestImage(directory, "invalid-data-url-" + UUID.randomUUID() + ".jpg");
+        }
+
+        String mimeInfo = imageData.substring(0, commaIndex);
+        String base64Data = imageData.substring(commaIndex + 1);
+        String extension = extractExtensionFromMimeInfo(mimeInfo);
+
+        return saveBase64ToFile(base64Data, directory, extension);
+    }
+
+    private String handleHttpUrl(String imageData, String directory) throws IOException {
+        try {
+            URL url = new URL(imageData);
+            HttpURLConnection connection = createConnection(url);
+
+            if (connection.getResponseCode() != HttpURLConnection.HTTP_OK) {
                 return createTestImage(directory, "http-error-" + UUID.randomUUID() + ".jpg");
             }
-        } else {
-            // Check if it looks like a JSON string that wasn't properly parsed
-            if (imageData.contains("\"imageBase64\":")) {
-                System.err.println("Received what appears to be a JSON string instead of raw base64 data");
-                return createTestImage(directory, "json-error-" + UUID.randomUUID() + ".jpg");
-            }
-            
-            // Try to clean the string in case it has whitespace or other formatting
-            String cleanedBase64 = imageData.trim().replaceAll("\\s", "");
-            
-            // Check if it's a URL that wasn't caught by previous conditions
-            if (cleanedBase64.startsWith("http")) {
-                System.err.println("URL detected in base64 section: " + cleanedBase64);
-                return storeImage("http" + cleanedBase64.substring(4), directory);
-            }
-            
-            try {
-                // Try to decode as base64
-                byte[] imageBytes = Base64.getDecoder().decode(cleanedBase64);
-                try (FileOutputStream fos = new FileOutputStream(filePath.toFile())) {
-                    fos.write(imageBytes);
-                }
-                System.out.println("Successfully decoded and saved raw base64 data");
-            } catch (IllegalArgumentException e) {
-                // If decoding fails, log detailed error and create a test image
-                System.err.println("Base64 decoding error for raw data: " + e.getMessage());
-                System.err.println("First 50 chars of input: " + 
-                    cleanedBase64.substring(0, Math.min(50, cleanedBase64.length())));
-                
-                return createTestImage(directory, "base64-error-" + UUID.randomUUID() + ".jpg");
+
+            String extension = getExtensionFromContentType(connection.getContentType());
+            String filename = generateFilename(extension);
+            Path filePath = getFilePath(directory, filename);
+
+            downloadFile(connection, filePath);
+            return directory + "/" + filename;
+
+        } catch (Exception e) {
+            System.err.println("Failed to download from URL: " + imageData + ", Error: " + e.getMessage());
+            return createTestImage(directory, "http-error-" + UUID.randomUUID() + ".jpg");
+        }
+    }
+
+    private String handleBlobUrl(String imageData, String directory) throws IOException {
+        System.err.println("Received blob URL that can't be processed: " + imageData);
+        return createTestImage(directory, "blob-test-" + UUID.randomUUID() + ".jpg");
+    }
+
+    private String handleBase64(String imageData, String directory) throws IOException {
+        return saveBase64ToFile(imageData, directory, ".jpg");
+    }
+
+    private HttpURLConnection createConnection(URL url) throws IOException {
+        HttpURLConnection connection = (HttpURLConnection) url.openConnection();
+        connection.setRequestMethod("GET");
+        connection.setConnectTimeout(5000);
+        connection.setReadTimeout(5000);
+        return connection;
+    }
+
+    private void downloadFile(HttpURLConnection connection, Path filePath) throws IOException {
+        try (InputStream in = connection.getInputStream();
+             FileOutputStream out = new FileOutputStream(filePath.toFile())) {
+
+            byte[] buffer = new byte[4096];
+            int bytesRead;
+            while ((bytesRead = in.read(buffer)) != -1) {
+                out.write(buffer, 0, bytesRead);
             }
         }
+    }
 
-        // Return the relative path to access the image
-        return directory + "/" + filename;
+    private String saveBase64ToFile(String base64Data, String directory, String extension) throws IOException {
+        try {
+            String cleanedData = base64Data.replaceAll("\\s", "");
+            byte[] imageBytes = Base64.getDecoder().decode(cleanedData);
+
+            String filename = generateFilename(extension);
+            Path filePath = getFilePath(directory, filename);
+
+            try (FileOutputStream fos = new FileOutputStream(filePath.toFile())) {
+                fos.write(imageBytes);
+            }
+
+            return directory + "/" + filename;
+
+        } catch (IllegalArgumentException e) {
+            System.err.println("Base64 decoding error: " + e.getMessage());
+            return createTestImage(directory, "base64-error-" + UUID.randomUUID() + extension);
+        }
+    }
+
+    private String extractExtensionFromMimeInfo(String mimeInfo) {
+        if (mimeInfo.contains("image/png")) return ".png";
+        if (mimeInfo.contains("image/gif")) return ".gif";
+        if (mimeInfo.contains("image/webp")) return ".webp";
+        if (mimeInfo.contains("image/jpg") || mimeInfo.contains("image/jpeg")) return ".jpg";
+        return ".jpg";
+    }
+
+    private String generateFilename(String extension) {
+        return UUID.randomUUID() + extension;
+    }
+
+    private Path getFilePath(String directory, String filename) {
+        return Paths.get(uploadDir, directory, filename);
     }
 
     public void deleteFile(String filePath) throws IOException {
@@ -249,29 +193,6 @@ public class FileStorageServiceImpl implements FileStorageService {
         return ".jpg"; // Default fallback
     }
 
-    private void logImageDataInfo(String imageData) {
-        if (imageData == null) {
-            System.err.println("WARNING: Received null image data");
-            return;
-        }
-        
-        System.out.println("Image data length: " + imageData.length());
-        String prefix = imageData.length() > 50 
-            ? imageData.substring(0, 50) + "..." 
-            : imageData;
-            
-        System.out.println("Image data starts with: " + prefix);
-        
-        if (imageData.startsWith("data:")) {
-            int commaIndex = imageData.indexOf(",");
-            if (commaIndex > 0) {
-                String mimeInfo = imageData.substring(0, commaIndex);
-                System.out.println("Data URL MIME info: " + mimeInfo);
-            } else {
-                System.out.println("WARNING: Data URL format but no comma found");
-            }
-        }
-    }
 
     /**
      * Creates a valid test image file for debugging purposes.
