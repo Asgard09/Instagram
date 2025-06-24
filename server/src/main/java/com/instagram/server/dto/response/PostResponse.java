@@ -1,13 +1,13 @@
 package com.instagram.server.dto.response;
 
-import lombok.Getter;
+import lombok.Builder;
 import lombok.Setter;
 
 import java.util.Date;
 import java.util.List;
 
+@Builder
 @Setter
-@Getter
 public class PostResponse {
     // Getters and setters
     private Long postId;

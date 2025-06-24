@@ -58,15 +58,15 @@ public class CommentController {
      * Convert Comment entity to CommentResponse
      */
     private CommentResponse convertToCommentResponse(Comment comment) {
-        CommentResponse response = new CommentResponse();
-        response.setCommentId(comment.getCommentId());
-        response.setComment(comment.getComment());
-        response.setCreatedAt(comment.getCreatedAt());
-        response.setPostId(comment.getPost().getPostId());
-        response.setUserId(comment.getUser().getUserId());
-        response.setUsername(comment.getUser().getUsername());
-        response.setProfilePicture(comment.getUser().getProfilePicture());
-        return response;
+        return CommentResponse.builder()
+                .commentId(comment.getCommentId())
+                .comment(comment.getComment())
+                .createdAt(comment.getCreatedAt())
+                .postId(comment.getPost().getPostId())
+                .userId(comment.getUser().getUserId())
+                .username(comment.getUser().getUsername())
+                .profilePicture(comment.getUser().getProfilePicture())
+                .build();
     }
 
     /**

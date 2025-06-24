@@ -1,10 +1,12 @@
 package com.instagram.server.dto.response;
 
+import lombok.Builder;
 import lombok.Getter;
 import lombok.Setter;
 
 @Setter
 @Getter
+@Builder
 public class CommentResponse {
     private Long commentId;
     private String comment;
@@ -13,5 +15,4 @@ public class CommentResponse {
     private Long userId;
     private String username;
     private String profilePicture;
-
 }

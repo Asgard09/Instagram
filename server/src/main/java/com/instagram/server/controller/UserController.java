@@ -111,14 +111,15 @@ public class UserController {
             User user = userService.getUserByUsername(username);
             if (user != null) {
                 // Create a clean copy without sensitive info
-                User cleanUser = new User();
-                cleanUser.setUserId(user.getUserId());
-                cleanUser.setUsername(user.getUsername());
-                cleanUser.setName(user.getName());
-                cleanUser.setBio(user.getBio());
-                cleanUser.setProfilePicture(user.getProfilePicture());
-                cleanUser.setGender(user.getGender());
-                cleanUser.setCreatedAt(user.getCreatedAt());
+                User cleanUser = User.builder()
+                        .userId(user.getUserId())
+                        .username(user.getUsername())
+                        .name(user.getName())
+                        .bio(user.getBio())
+                        .profilePicture(user.getProfilePicture())
+                        .gender(user.getGender())
+                        .createdAt(user.getCreatedAt())
+                        .build();
                 // Don't include posts to avoid potential JSON issues
                 
                 return ResponseEntity.ok(cleanUser);

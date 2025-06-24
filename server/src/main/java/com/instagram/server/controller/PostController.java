@@ -192,13 +192,14 @@ public class PostController {
     
     // Helper method to convert Post to PostResponse
     private PostResponse convertToPostResponse(Post post) {
-        PostResponse response = new PostResponse();
-        response.setPostId(post.getPostId());
-        response.setCaption(post.getCaption());
-        response.setContent(post.getContent());
-        response.setCreatedAt(post.getCreatedAt());
-        response.setImageUrls(post.getImageUrls());
-        response.setTaggedPeople(post.getTaggedPeople());
+        PostResponse response = PostResponse.builder()
+                .postId(post.getPostId())
+                .caption(post.getCaption())
+                .content(post.getContent())
+                .createdAt(post.getCreatedAt())
+                .imageUrls(post.getImageUrls())
+                .taggedPeople(post.getTaggedPeople())
+                .build();
         
         // Extract user information
         if (post.getUser() != null) {

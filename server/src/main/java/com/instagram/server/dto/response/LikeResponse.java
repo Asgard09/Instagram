@@ -1,12 +1,10 @@
 package com.instagram.server.dto.response;
 
-import lombok.Getter;
-import lombok.Setter;
+import lombok.Builder;
 
 import java.util.Date;
 
-@Setter
-@Getter
+@Builder
 public class LikeResponse {
     // Getters and setters
     private Long likeId;

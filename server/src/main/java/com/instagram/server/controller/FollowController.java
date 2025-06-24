@@ -136,14 +136,14 @@ public class FollowController {
      * Convert User entity to FollowResponse DTO
      */
     private FollowResponse convertToFollowResponse(User user) {
-        FollowResponse response = new FollowResponse();
-        response.setUserId(user.getUserId());
-        response.setUsername(user.getUsername());
-        response.setProfilePicture(user.getProfilePicture());
-        response.setFollowing(followService.isFollowing(user.getUserId()));
-        response.setFollowersCount(followService.getFollowersCount(user.getUserId()));
-        response.setFollowingCount(followService.getFollowingCount(user.getUserId()));
-        response.setPostsCount(followService.getPostsCount(user.getUserId()));
-        return response;
+        return FollowResponse.builder()
+                .userId(user.getUserId())
+                .username(user.getUsername())
+                .profilePicture(user.getProfilePicture())
+                .isFollowing(followService.isFollowing(user.getUserId()))
+                .followersCount(followService.getFollowersCount(user.getUserId()))
+                .followingCount(followService.getFollowingCount(user.getUserId()))
+                .postsCount(followService.getPostsCount(user.getUserId()))
+                .build();
     }
 }

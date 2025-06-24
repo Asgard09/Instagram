@@ -89,12 +89,12 @@ public class LikeController {
      * Convert Like entity to response DTO
      */
     private LikeResponse convertToLikeResponse(Like like) {
-        LikeResponse response = new LikeResponse();
-        response.setLikeId(like.getLikeId());
-        response.setPostId(like.getPost().getPostId());
-        response.setUserId(like.getUser().getUserId());
-        response.setUsername(like.getUser().getUsername());
-        response.setCreatedAt(like.getCreatedAt());
-        return response;
+        return LikeResponse.builder()
+                .likeId(like.getLikeId())
+                .postId(like.getPost().getPostId())
+                .userId(like.getUser().getUserId())
+                .username(like.getUser().getUsername())
+                .createdAt(like.getCreatedAt())
+                .build();
     }
 }
