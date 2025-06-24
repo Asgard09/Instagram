@@ -88,7 +88,7 @@ public class ChatServiceImpl implements ChatService {
         Chat newChat = new Chat();
         newChat.setUser1(user1);
         newChat.setUser2(user2);
-        newChat = chatRepository.save(newChat);
+        chatRepository.save(newChat);
         
         return ChatDTO.fromEntity(newChat, user1, true);
     }
@@ -114,22 +114,20 @@ public class ChatServiceImpl implements ChatService {
                 });
         
         // Create a message
-        Message message = new Message();
-        message.setContent(content);
-        message.setSender(sender);
-        message.setReceiver(receiver);
-        
-        // Use UTC timestamp for consistent time zone handling
-        Date now = new Date();
-        message.setCreatedAt(now);
-        message.setRead(false);
+        Message message = Message.builder()
+                .content(content)
+                .sender(sender)
+                .receiver(receiver)
+                .createdAt(new Date())
+                .read(false)
+                .build();
         
         // Save message
-        message = messageRepository.save(message);
+        messageRepository.save(message);
         
         // Add a message to chat
         chat.getMessages().add(0, message); // Add at beginning for most recent first
-        chat.setUpdatedAt(now);
+        chat.setUpdatedAt(new Date());
         chatRepository.save(chat);
         
         // Convert to DTO
