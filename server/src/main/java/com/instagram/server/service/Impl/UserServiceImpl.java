@@ -16,6 +16,7 @@ import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
+import java.util.function.Consumer;
 
 @Service
 @SuppressWarnings("unused")
@@ -75,34 +76,29 @@ public class UserServiceImpl implements UserService {
                 .orElseThrow(() -> new RuntimeException("User not found"));
 
         // Update fields if they are provided
-        if (request.getUsername() != null && !request.getUsername().isEmpty()) {
-            // Check if new username is already taken
-            if (!request.getUsername().equals(currentUsername) && 
-                userRepository.findByUsername(request.getUsername()).isPresent()) {
-                throw new RuntimeException("Username is already taken");
-            }
-            user.setUsername(request.getUsername());
-        }
-        
-        if (request.getName() != null) {
-            user.setName(request.getName());
-        }
-        
-        if (request.getBio() != null) {
-            user.setBio(request.getBio());
-        }
-        
-        if (request.getProfilePicture() != null) {
-            user.setProfilePicture(request.getProfilePicture());
-        }
-        
-        if (request.getGender() != null) {
-            user.setGender(request.getGender());
-        }
+        updateUserName(user, request.getUsername(), currentUsername);
+        updateFieldIfPresent(request.getName(), user::setName);
+        updateFieldIfPresent(request.getBio(), user::setBio);
+        updateFieldIfPresent(request.getProfilePicture(), user::setProfilePicture);
+        updateFieldIfPresent(request.getGender(), user::setGender);
 
         return userRepository.save(user);
     }
-    
+
+    private void updateUserName(User user, String newUsername, String currentUsername){
+        if(newUsername != null && !newUsername.isEmpty()){
+            if (userRepository.findByUsername(newUsername).isPresent()){
+                throw new RuntimeException("Username is already taken");
+            }
+            user.setUsername(newUsername);
+        }
+    }
+
+    private <T> void updateFieldIfPresent(T value, Consumer<T> setter){
+        if (value != null){
+            setter.accept(value);
+        }
+    }
     public User updateProfileImage(UpdateProfileImageRequest request) throws IOException {
         // Get current authenticated user
         UserDetails userDetails = (UserDetails) SecurityContextHolder.getContext().getAuthentication().getPrincipal();
