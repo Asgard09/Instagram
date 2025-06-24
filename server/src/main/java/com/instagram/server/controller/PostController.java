@@ -202,38 +202,46 @@ public class PostController {
                 .build();
         
         // Extract user information
+        extractUserInfo(response, post);
+        
+        // Create display caption with "@username" format instead of "with username"
+        displayCaption(response, post);
+        
+        return response;
+    }
+
+    private void extractUserInfo(PostResponse response, Post post){
         if (post.getUser() != null) {
             response.setUserId(post.getUser().getUserId());
             response.setUsername(post.getUser().getUsername());
         }
-        
-        // Create display caption with "@username" format instead of "with username"
+    }
+
+    private void displayCaption(PostResponse response, Post post){
         if (post.getTaggedPeople() != null && !post.getTaggedPeople().isEmpty()) {
             StringBuilder displayCaption = new StringBuilder(post.getCaption() != null ? post.getCaption() : "");
-            
+
             // Add space if the caption doesn't end with a space
             if (!displayCaption.toString().isEmpty() && !displayCaption.toString().endsWith(" ")) {
                 displayCaption.append(" ");
             }
-            
+
             // Get the first tagged person
             String firstTagged = post.getTaggedPeople().get(0);
-            
+
             // Add "@username" to the caption
             displayCaption.append("@").append(firstTagged);
-            
+
             // If there are more than some tagged people, add "and X others"
             if (post.getTaggedPeople().size() > 1) {
                 int othersCount = post.getTaggedPeople().size() - 1;
                 displayCaption.append(" and ").append(othersCount).append(othersCount > 1 ? " others" : " other");
             }
-            
+
             response.setDisplayCaption(displayCaption.toString());
         } else {
             // If no tagged people, display caption is the same as regular caption
             response.setDisplayCaption(post.getCaption());
         }
-        
-        return response;
     }
 }
