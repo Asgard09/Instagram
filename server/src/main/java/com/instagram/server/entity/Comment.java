@@ -2,12 +2,14 @@ package com.instagram.server.entity;
 
 import jakarta.persistence.*;
 import lombok.Getter;
+import lombok.NoArgsConstructor;
 import lombok.Setter;
 
 @Entity
 @Getter
 @Setter
 @Table(name = "comments")
+@NoArgsConstructor
 public class Comment {
     @Id
     /*Must be long to auto increment*/

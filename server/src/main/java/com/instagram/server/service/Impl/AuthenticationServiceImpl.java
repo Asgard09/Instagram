@@ -28,13 +28,14 @@ public class AuthenticationServiceImpl implements AuthenticationService {
     private final AuthenticationManager authenticationManager;
 
     public AuthenticationResponse register(AuthRequest request){
-        User user = new User();
-        user.setUsername(request.getUsername());
-        user.setEmail(request.getEmail());
-        user.setPassword(passwordEncoder.encode(request.getPassword()));
-        user.setCreatedAt(new Date(System.currentTimeMillis()));
+        User user = User.builder()
+                .username(request.getUsername())
+                .email(request.getEmail())
+                .password(passwordEncoder.encode(request.getPassword()))
+                .createdAt(new Date(System.currentTimeMillis()))
+                .build();
 
-        user = userRepository.save(user);
+        userRepository.save(user);
         String jwt = jwtService.generateAccessToken(user);
 
         saveUserToken(jwt, user);

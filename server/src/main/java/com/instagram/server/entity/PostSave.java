@@ -2,6 +2,7 @@ package com.instagram.server.entity;
 
 import jakarta.persistence.*;
 import lombok.Getter;
+import lombok.NoArgsConstructor;
 import lombok.Setter;
 
 import java.util.Date;
@@ -10,6 +11,7 @@ import java.util.Date;
 @Getter
 @Setter
 @Table(name = "post_saves")
+@NoArgsConstructor
 public class PostSave {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)

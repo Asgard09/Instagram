@@ -1,12 +1,18 @@
 package com.instagram.server.dto.response;
 
 import lombok.Builder;
+import lombok.Getter;
 import lombok.Setter;
 
 import java.util.Date;
 import java.util.List;
 
+/*Note
+* Jackson (the JSON serialization library) needs getters to serialize the object to JSON
+* for the HTTP response.
+*/
 @Builder
+@Getter
 @Setter
 public class PostResponse {
     // Getters and setters
